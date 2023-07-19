@@ -27,6 +27,7 @@ import Optics.Lens
 import Optics.Optic (NoIx)
 
 data Color il csp = Color Double Double Double
+  deriving (Show, Eq, Ord)
 
 data XYZ
 
