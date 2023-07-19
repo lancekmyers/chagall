@@ -33,6 +33,18 @@ pattern Luv {l, u, v} <-
   where
     Luv l u v = view (re luv) (Color l u v :: Color il Luv)
 
+instance Illuminant il => LabelOptic "l" A_Lens (Color il Luv) (Color il Luv) Double Double where
+  labelOptic :: Lens' (Color il Luv) Double
+  labelOptic = lens (\(Color l _ _) -> l) (\(Color _ u v) l -> Color l u v)
+
+instance Illuminant il => LabelOptic "u" A_Lens (Color il Luv) (Color il Luv) Double Double where
+  labelOptic :: Lens' (Color il Luv) Double
+  labelOptic = lens (\(Color _ u _) -> u) (\(Color l _ v) u -> Color l u v)
+
+instance Illuminant il => LabelOptic "v" A_Lens (Color il Luv) (Color il Luv) Double Double where
+  labelOptic :: Lens' (Color il Luv) Double
+  labelOptic = lens (\(Color _ _ v) -> v) (\(Color l u _) v -> Color l u v)
+
 xyzToLuv :: forall il. Illuminant il => Color il XYZ -> Color il Luv
 xyzToLuv (XYZ x y z) = Color l u v
   where
