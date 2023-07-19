@@ -19,7 +19,8 @@ maintainer:         lancekmyers@gmail.com
 extra-source-files: CHANGELOG.md
 
 library
-    exposed-modules:  MyLib, ColorSpace.XYZ
+    exposed-modules:  MyLib, 
+        ColorSpace.XYZ, ColorSpace.Lab
 
     -- Modules included in this library but not exported.
     -- other-modules:
