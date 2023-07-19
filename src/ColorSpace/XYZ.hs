@@ -11,6 +11,10 @@ module ColorSpace.XYZ
     Illuminant (..),
     ColorSpace (..),
     Color,
+    D75,
+    D65,
+    D55,
+    D50,
   )
 where
 
@@ -28,10 +32,27 @@ data XYZ
 class Illuminant il where
   refWhite :: il -> Color il XYZ
 
+-- Reference illuminants from http://www.brucelindbloom.com
+-- he says "all come from ASTM E308-01 except B which comes from Wyszecki & Stiles, p. 769"
 data D65 = D65
 
 instance Illuminant D65 where
   refWhite _ = XYZ {x = 0.95047, y = 1.00000, z = 1.08883}
+
+data D55 = D55
+
+instance Illuminant D55 where
+  refWhite _ = XYZ {x = 0.95682, y = 1.00000, z = 0.92149}
+
+data D50 = D50
+
+instance Illuminant D50 where
+  refWhite _ = XYZ {x = 0.96422, y = 1.00000, z = 0.82521}
+
+data D75 = D75
+
+instance Illuminant D75 where
+  refWhite _ = XYZ {x = 0.94972, y = 1.00000, z = 1.22638}
 
 class ColorSpace csp where
   xyz :: Iso' (Color il csp) (Color il XYZ)
