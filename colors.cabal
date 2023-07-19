@@ -20,7 +20,7 @@ extra-source-files: CHANGELOG.md
 
 library
     exposed-modules:  MyLib, 
-        ColorSpace.XYZ, ColorSpace.Lab
+        ColorSpace.XYZ, ColorSpace.Lab, ColorSpace.Luv
 
     -- Modules included in this library but not exported.
     -- other-modules:
