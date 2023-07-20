@@ -26,7 +26,11 @@ import Optics.Iso
 import Optics.Lens
 import Optics.Optic (NoIx)
 
-data Color il csp = Color Double Double Double
+data Color il csp
+  = Color
+      {-# UNPACK #-} !Double
+      {-# UNPACK #-} !Double
+      {-# UNPACK #-} !Double
   deriving (Show, Eq, Ord)
 
 data XYZ
