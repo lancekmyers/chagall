@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -81,3 +82,50 @@ luvToXYZ (Color l u v) = Color x y z
     d = y * (39 * l / (v + 13 * l * v0) - 5)
     u0 = 4 * xr / (xr + 15 * yr + 3 * zr)
     v0 = 9 * yr / (xr + 15 * yr + 3 * zr)
+
+-- | LCH(uv) color (note that the angle is given in radians, not degrees)
+data LCHuv
+
+instance ColorSpace LCHuv where
+  xyz = re luv_lch % (xyz @Luv)
+
+lchuv :: (ColorSpace csp, Illuminant il) => Iso' (Color il csp) (Color il LCHuv)
+lchuv = xyz % (re xyz)
+
+pattern LCHuv ::
+  (ColorSpace csp, Illuminant il) =>
+  Double ->
+  Double ->
+  Double ->
+  Color il csp
+pattern LCHuv {l, c, h} <-
+  (view lchuv -> Color l c h)
+  where
+    LCHuv l c h = view (re lchuv) (Color l c h :: Color il LCHuv)
+
+instance Illuminant il => LabelOptic "l" A_Lens (Color il LCHuv) (Color il LCHuv) Double Double where
+  labelOptic :: Lens' (Color il LCHuv) Double
+  labelOptic = lens (\(Color l _ _) -> l) (\(Color _ c h) l -> Color l c h)
+
+instance Illuminant il => LabelOptic "c" A_Lens (Color il LCHuv) (Color il LCHuv) Double Double where
+  labelOptic :: Lens' (Color il LCHuv) Double
+  labelOptic = lens (\(Color _ c _) -> c) (\(Color l _ h) c -> Color l c h)
+
+instance Illuminant il => LabelOptic "h" A_Lens (Color il LCHuv) (Color il LCHuv) Double Double where
+  labelOptic :: Lens' (Color il LCHuv) Double
+  labelOptic = lens (\(Color _ _ h) -> h) (\(Color l c _) h -> Color l c h)
+
+luv_lch :: Illuminant il => Iso' (Color il Luv) (Color il LCHuv)
+luv_lch = iso luvTolchuv lchuvToluv
+
+luvTolchuv :: Illuminant il => Color il Luv -> Color il LCHuv
+luvTolchuv (Color l u v) = Color l u v
+  where
+    c = sqrt (u ^ 2 + v ^ 2)
+    h = atan2 u v
+
+lchuvToluv :: Illuminant il => Color il LCHuv -> Color il Luv
+lchuvToluv (Color l c h) = Color l u v
+  where
+    u = c * cos h
+    v = c * sin h
