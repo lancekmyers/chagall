@@ -110,6 +110,18 @@ pattern LCHab {l, c, h} <-
   where
     LCHab l c h = view (re lchab) (Color l c h :: Color il LCHab)
 
+instance Illuminant il => LabelOptic "l" A_Lens (Color il LCHab) (Color il LCHab) Double Double where
+  labelOptic :: Lens' (Color il LCHab) Double
+  labelOptic = lens (\(Color l _ _) -> l) (\(Color _ c h) l -> Color l c h)
+
+instance Illuminant il => LabelOptic "c" A_Lens (Color il LCHab) (Color il LCHab) Double Double where
+  labelOptic :: Lens' (Color il LCHab) Double
+  labelOptic = lens (\(Color _ c _) -> c) (\(Color l _ h) c -> Color l c h)
+
+instance Illuminant il => LabelOptic "h" A_Lens (Color il LCHab) (Color il LCHab) Double Double where
+  labelOptic :: Lens' (Color il LCHab) Double
+  labelOptic = lens (\(Color _ _ h) -> h) (\(Color l c _) h -> Color l c h)
+
 lab_lch :: Illuminant il => Iso' (Color il Lab) (Color il LCHab)
 lab_lch = iso labTolchab lchabTolab
 
