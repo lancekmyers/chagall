@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -6,6 +7,9 @@ module ColorSpace.Lab
   ( pattern Lab,
     Lab,
     lab,
+    pattern LCHab,
+    LCHab,
+    lchab,
   )
 where
 
@@ -85,3 +89,38 @@ labToXYZ (Color l a b) = Color (xr' * xr) (yr' * yr) (zr' * zr)
     fx = a / 500 + fy
     fz = fy - b / 200
     fy = (l + 16) / 116
+
+-- | LCH(ab) color (note that the angle is given in radians, not degrees)
+data LCHab
+
+instance ColorSpace LCHab where
+  xyz = re lab_lch % (xyz @Lab)
+
+lchab :: (ColorSpace csp, Illuminant il) => Iso' (Color il csp) (Color il LCHab)
+lchab = xyz % (re xyz)
+
+pattern LCHab ::
+  (ColorSpace csp, Illuminant il) =>
+  Double ->
+  Double ->
+  Double ->
+  Color il csp
+pattern LCHab {l, c, h} <-
+  (view lchab -> Color l c h)
+  where
+    LCHab l c h = view (re lchab) (Color l c h :: Color il LCHab)
+
+lab_lch :: Illuminant il => Iso' (Color il Lab) (Color il LCHab)
+lab_lch = iso labTolchab lchabTolab
+
+labTolchab :: Illuminant il => Color il Lab -> Color il LCHab
+labTolchab (Color l a b) = Color l c h
+  where
+    c = sqrt (a ^ 2 + b ^ 2)
+    h = atan2 a b
+
+lchabTolab :: Illuminant il => Color il LCHab -> Color il Lab
+lchabTolab (Color l c h) = Color l a b
+  where
+    a = c * cos h
+    b = c * sin h
