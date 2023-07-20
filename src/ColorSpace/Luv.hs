@@ -7,6 +7,9 @@ module ColorSpace.Luv
   ( pattern Luv,
     Luv,
     luv,
+    pattern LCHuv,
+    LCHuv,
+    lchuv,
   )
 where
 
