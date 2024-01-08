@@ -4,7 +4,7 @@
 {-# LANGUAGE ViewPatterns #-}
 
 -- | Implementation based on https://observablehq.com/@jrus/jzazbz
-module ColorSpace.Lab
+module ColorSpace.JzAzBz
   ( JzAzBz,
     pattern JzAzBz,
     jab,

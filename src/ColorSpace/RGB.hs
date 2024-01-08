@@ -4,7 +4,7 @@
 {-# LANGUAGE ViewPatterns #-}
 
 -- | In particular this is sRGB.
-module RGB
+module ColorSpace.RGB
   ( RGB,
     RGBLin,
     rgb,
