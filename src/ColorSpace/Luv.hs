@@ -14,7 +14,7 @@ module ColorSpace.Luv
 where
 
 import ColorSpace.XYZ
-import Optics.Core (A_Lens, Iso', Lens', iso, lens, view, (%))
+import Optics.Core (A_Lens, Iso', Lens', iso, lens, simple, view, (%))
 import Optics.Label (LabelOptic (..))
 import Optics.Re (re)
 
@@ -23,13 +23,13 @@ data Luv
 instance Illuminant il => ColorSpace Luv il where
   xyz = iso luvToXYZ xyzToLuv
 
-{-# RULES "luv iso identity on luv D65" luv @Luv @D65 = iso id id #-}
+{-# RULES "luv iso identity on luv D65" luv @Luv @D65 = simple #-}
 
-{-# RULES "luv iso identity on luv D50" luv @Luv @D50 = iso id id #-}
+{-# RULES "luv iso identity on luv D50" luv @Luv @D50 = simple #-}
 
-{-# RULES "luv iso identity on luv D55" luv @Luv @D55 = iso id id #-}
+{-# RULES "luv iso identity on luv D55" luv @Luv @D55 = simple #-}
 
-{-# RULES "luv iso identity on luv D75" luv @Luv @D75 = iso id id #-}
+{-# RULES "luv iso identity on luv D75" luv @Luv @D75 = simple #-}
 
 {-# INLINE [1] luv #-}
 luv :: forall csp il. ColorSpace csp il => Iso' (Color il csp) (Color il Luv)
@@ -101,13 +101,13 @@ data LCHuv
 instance Illuminant il => ColorSpace LCHuv il where
   xyz = re luv_lch % (xyz @Luv)
 
-{-# RULES "lchuv iso identity on lchuv D65" lchuv @LCHuv @D65 = iso id id #-}
+{-# RULES "lchuv iso identity on lchuv D65" lchuv @LCHuv @D65 = simple #-}
 
-{-# RULES "lchuv iso identity on lchuv D50" lchuv @LCHuv @D50 = iso id id #-}
+{-# RULES "lchuv iso identity on lchuv D50" lchuv @LCHuv @D50 = simple #-}
 
-{-# RULES "lchuv iso identity on lchuv D55" lchuv @LCHuv @D55 = iso id id #-}
+{-# RULES "lchuv iso identity on lchuv D55" lchuv @LCHuv @D55 = simple #-}
 
-{-# RULES "lchuv iso identity on lchuv D75" lchuv @LCHuv @D75 = iso id id #-}
+{-# RULES "lchuv iso identity on lchuv D75" lchuv @LCHuv @D75 = simple #-}
 
 {-# INLINE [1] lchuv #-}
 lchuv :: ColorSpace csp il => Iso' (Color il csp) (Color il LCHuv)

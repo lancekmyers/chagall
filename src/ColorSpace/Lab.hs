@@ -15,7 +15,7 @@ module ColorSpace.Lab
 where
 
 import ColorSpace.XYZ
-import Optics.Core (A_Lens, Iso', Lens', iso, lens, view, (%))
+import Optics.Core (A_Lens, Iso', Lens', iso, lens, simple, view, (%))
 import Optics.Label (LabelOptic (..))
 import Optics.Re (re)
 
@@ -24,13 +24,13 @@ data Lab
 instance Illuminant il => ColorSpace Lab il where
   xyz = iso labToXYZ xyzToLab
 
-{-# RULES "lab iso identity on lab D65" lab @Lab @D65 = iso id id #-}
+{-# RULES "lab iso identity on lab D65" lab @Lab @D65 = simple #-}
 
-{-# RULES "lab iso identity on lab D50" lab @Lab @D50 = iso id id #-}
+{-# RULES "lab iso identity on lab D50" lab @Lab @D50 = simple #-}
 
-{-# RULES "lab iso identity on lab D55" lab @Lab @D55 = iso id id #-}
+{-# RULES "lab iso identity on lab D55" lab @Lab @D55 = simple #-}
 
-{-# RULES "lab iso identity on lab D75" lab @Lab @D75 = iso id id #-}
+{-# RULES "lab iso identity on lab D75" lab @Lab @D75 = simple #-}
 
 {-# INLINE [1] lab #-}
 lab :: ColorSpace csp il => Iso' (Color il csp) (Color il Lab)
@@ -106,13 +106,13 @@ data LCHab
 instance Illuminant il => ColorSpace LCHab il where
   xyz = re lab_lch % (xyz @Lab)
 
-{-# RULES "lchab iso identity on lchab D65" lchab @LCHab @D65 = iso id id #-}
+{-# RULES "lchab iso identity on lchab D65" lchab @LCHab @D65 = simple #-}
 
-{-# RULES "lchab iso identity on lchab D50" lchab @LCHab @D50 = iso id id #-}
+{-# RULES "lchab iso identity on lchab D50" lchab @LCHab @D50 = simple #-}
 
-{-# RULES "lchab iso identity on lchab D55" lchab @LCHab @D55 = iso id id #-}
+{-# RULES "lchab iso identity on lchab D55" lchab @LCHab @D55 = simple #-}
 
-{-# RULES "lchab iso identity on lchab D75" lchab @LCHab @D75 = iso id id #-}
+{-# RULES "lchab iso identity on lchab D75" lchab @LCHab @D75 = simple #-}
 
 {-# INLINE [1] lchab #-}
 lchab :: ColorSpace csp il => Iso' (Color il csp) (Color il LCHab)

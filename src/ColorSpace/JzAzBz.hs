@@ -16,7 +16,7 @@ module ColorSpace.JzAzBz
 where
 
 import ColorSpace.XYZ
-import Optics.Core (A_Lens, Iso', Lens', iso, lens, view, (%))
+import Optics.Core (A_Lens, Iso', Lens', iso, lens, simple, view, (%))
 import Optics.Label (LabelOptic (..))
 import Optics.Re (re)
 
@@ -59,7 +59,7 @@ jzazbzToXYZ (Color jz az bz) = Color x y z
       let x' = x ** 7.460772656268214e-03
        in ((0.8359375 - x') / (18.6875 * x' - 18.8515625)) ** 6.277394636015326
 
-{-# RULES "jab iso identity on jab" jab @JzAzBz @D65 = iso id id #-}
+{-# RULES "jab iso identity on jab" jab @JzAzBz @D65 = simple #-}
 
 {-# INLINE [1] jab #-}
 jab :: forall csp il. ColorSpace csp il => Iso' (Color il csp) (Color D65 JzAzBz)

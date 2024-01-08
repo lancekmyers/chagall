@@ -73,7 +73,7 @@ class Illuminant il => ColorSpace csp il where
   xyz :: Iso' (Color il csp) (Color il XYZ)
 
 instance Illuminant il => ColorSpace XYZ il where
-  xyz = iso id id
+  xyz = simple
 
 {-# COMPLETE XYZ #-}
 

@@ -20,7 +20,7 @@ where
 import ColorSpace.XYZ
 import Data.Bits (Bits (shiftR), shiftL)
 import Numeric (readHex)
-import Optics.Core (A_Lens, Each (each), Iso', Lens', iso, lens, over, review, to, view, (%), (%~))
+import Optics.Core (A_Lens, Each (each), Iso', Lens', iso, lens, over, review, simple, to, view, (%), (%~))
 import Optics.Label (LabelOptic (..))
 import Optics.Re (re)
 import Text.Printf (printf)
@@ -65,7 +65,7 @@ data RGB
 instance ColorSpace RGB D65 where
   xyz = (re compandIso) % xyz
 
-{-# RULES "rgb iso identity on rgb" rgb @RGB @D65 = iso id id #-}
+{-# RULES "rgb iso identity on rgb" rgb @RGB @D65 = simple #-}
 
 {-# INLINE [1] rgb #-}
 rgb :: forall csp il. ColorSpace csp il => Iso' (Color il csp) (Color D65 RGB)
