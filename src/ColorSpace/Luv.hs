@@ -140,7 +140,7 @@ luv_lch :: Illuminant il => Iso' (Color il Luv) (Color il LCHuv)
 luv_lch = iso luvTolchuv lchuvToluv
 
 luvTolchuv :: Illuminant il => Color il Luv -> Color il LCHuv
-luvTolchuv (Color l u v) = Color l u v
+luvTolchuv (Color l u v) = Color l c h
   where
     c = sqrt (u ^ 2 + v ^ 2)
     h = atan2 u v
