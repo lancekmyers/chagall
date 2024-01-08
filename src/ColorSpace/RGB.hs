@@ -43,9 +43,9 @@ rgbLinToXYZ (Color r g b) = Color x y z
 xyzToRGBLin :: Illuminant il => Color il XYZ -> Color il RGBLin
 xyzToRGBLin (Color x y z) = Color r g b
   where
-    r = 3.2404542 * r - 1.5371385 * g - 0.4985314 * b
-    g = -0.9692660 * r + 1.8760108 * g + 0.0415560 * b
-    b = 0.0556434 * r - 0.2040259 * g + 1.0572252 * b
+    r = 3.2404542 * x - 1.5371385 * y - 0.4985314 * z
+    g = -0.9692660 * x + 1.8760108 * y + 0.0415560 * z
+    b = 0.0556434 * x - 0.2040259 * y + 1.0572252 * z
 
 pattern RGBLin ::
   ColorSpace csp il =>
