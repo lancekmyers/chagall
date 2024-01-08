@@ -161,7 +161,7 @@ apca tx bg
     -- powercurve
     n_tx = 0.57
     n_bg = 0.56
-    r_tx = 0.63
+    r_tx = 0.62
     r_bg = 0.65
     -- clamps and scaler
     b_clip = 1.414

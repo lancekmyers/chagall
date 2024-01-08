@@ -59,7 +59,10 @@ jzazbzToXYZ (Color jz az bz) = Color x y z
       let x' = x ** 7.460772656268214e-03
        in ((0.8359375 - x') / (18.6875 * x' - 18.8515625)) ** 6.277394636015326
 
-jab :: ColorSpace csp il => Iso' (Color il csp) (Color D65 JzAzBz)
+{-# RULES "jab iso identity on jab" jab @JzAzBz @D65 = iso id id #-}
+
+{-# INLINE [1] jab #-}
+jab :: forall csp il. ColorSpace csp il => Iso' (Color il csp) (Color D65 JzAzBz)
 jab = xyz % chromIso % (re xyz)
 
 pattern JzAzBz ::

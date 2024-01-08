@@ -64,7 +64,10 @@ data RGB
 instance ColorSpace RGB D65 where
   xyz = (re compandIso) % xyz
 
-rgb :: ColorSpace csp il => Iso' (Color il csp) (Color D65 RGB)
+{-# RULES "rgb iso identity on rgb" rgb @RGB @D65 = iso id id #-}
+
+{-# INLINE [1] rgb #-}
+rgb :: forall csp il. ColorSpace csp il => Iso' (Color il csp) (Color D65 RGB)
 rgb = xyz % chromIso % (re xyz)
 
 compandIso :: Iso' (Color D65 RGBLin) (Color D65 RGB)
