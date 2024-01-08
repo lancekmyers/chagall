@@ -21,14 +21,14 @@ import Optics.Re (re)
 
 data Lab
 
-instance ColorSpace Lab where
+instance Illuminant il => ColorSpace Lab il where
   xyz = iso labToXYZ xyzToLab
 
-lab :: (ColorSpace csp, Illuminant il) => Iso' (Color il csp) (Color il Lab)
+lab :: ColorSpace csp il => Iso' (Color il csp) (Color il Lab)
 lab = xyz % (re xyz)
 
 pattern Lab ::
-  (ColorSpace csp, Illuminant il) =>
+  ColorSpace csp il =>
   Double ->
   Double ->
   Double ->
@@ -94,14 +94,14 @@ labToXYZ (Color l a b) = Color (xr' * xr) (yr' * yr) (zr' * zr)
 -- | LCH(ab) color (note that the angle is given in radians, not degrees)
 data LCHab
 
-instance ColorSpace LCHab where
+instance Illuminant il => ColorSpace LCHab il where
   xyz = re lab_lch % (xyz @Lab)
 
-lchab :: (ColorSpace csp, Illuminant il) => Iso' (Color il csp) (Color il LCHab)
+lchab :: ColorSpace csp il => Iso' (Color il csp) (Color il LCHab)
 lchab = xyz % (re xyz)
 
 pattern LCHab ::
-  (ColorSpace csp, Illuminant il) =>
+  ColorSpace csp il =>
   Double ->
   Double ->
   Double ->

@@ -22,10 +22,10 @@ import Optics.Re (re)
 
 data JzAzBz
 
-instance ColorSpace JzAzBz where
+instance ColorSpace JzAzBz D65 where
   xyz = iso jzazbzToXYZ xyzToJzazbz
 
-xyzToJzazbz :: Illuminant il => Color il XYZ -> Color il JzAzBz
+xyzToJzazbz :: Color D65 XYZ -> Color D65 JzAzBz
 xyzToJzazbz (Color x y z) = Color jz az bz
   where
     lp = pq $ 0.674207838 * x + 0.382799340 * y - 0.047570458 * z
@@ -40,7 +40,7 @@ xyzToJzazbz (Color x y z) = Color jz az bz
       let x' = (x * 1e-4) ** 0.1593017578125
        in ((0.8359375 + 18.8515625 * x') / (1 + 18.6875 * x')) ** 134.034375
 
-jzazbzToXYZ :: Color il JzAzBz -> Color il XYZ
+jzazbzToXYZ :: Color D65 JzAzBz -> Color D65 XYZ
 jzazbzToXYZ (Color jz az bz) = Color x y z
   where
     jz' = jz + 1.6295499532821566e-11
@@ -59,11 +59,11 @@ jzazbzToXYZ (Color jz az bz) = Color x y z
       let x' = x ** 7.460772656268214e-03
        in ((0.8359375 - x') / (18.6875 * x' - 18.8515625)) ** 6.277394636015326
 
-jab :: (ColorSpace csp, Illuminant il) => Iso' (Color il csp) (Color il JzAzBz)
-jab = xyz % (re xyz)
+jab :: ColorSpace csp il => Iso' (Color il csp) (Color D65 JzAzBz)
+jab = xyz % chromIso % (re xyz)
 
 pattern JzAzBz ::
-  (ColorSpace csp, Illuminant il) =>
+  ColorSpace csp il =>
   Double ->
   Double ->
   Double ->
@@ -88,10 +88,10 @@ instance Illuminant il => LabelOptic "bz" A_Lens (Color il JzAzBz) (Color il JzA
 -- | Polar coordinate version of JzAzBz
 data JzCzHz
 
-instance ColorSpace JzCzHz where
+instance ColorSpace JzCzHz D65 where
   xyz = re jzazbz_jzczhz % (xyz @JzAzBz)
 
-jch :: (ColorSpace csp, Illuminant il) => Iso' (Color il csp) (Color il JzCzHz)
+jch :: ColorSpace csp il => Iso' (Color il csp) (Color D65 JzCzHz)
 jch = jab % jzazbz_jzczhz
 
 jzazbz_jzczhz :: Illuminant il => Iso' (Color il JzAzBz) (Color il JzCzHz)
@@ -101,7 +101,7 @@ jzazbz_jzczhz = iso fwd bwd
     bwd (Color jz cz hz) = Color jz (cz * cos hz) (cz * sin hz)
 
 pattern JzCzHz ::
-  (ColorSpace csp, Illuminant il) =>
+  ColorSpace csp il =>
   Double ->
   Double ->
   Double ->
@@ -109,10 +109,10 @@ pattern JzCzHz ::
 pattern JzCzHz {jz, cz, hz} <-
   (view jch -> Color jz cz hz)
   where
-    JzCzHz jz az bz = view (re jab) (Color jz az bz :: Color il JzAzBz)
+    JzCzHz jz az bz = view (re jab) (Color jz az bz :: Color D65 JzAzBz)
 
 -- -- | Color difference Delta Ez
-deltaEz :: Illuminant il => Color il JzCzHz -> Color il JzCzHz -> Double
+deltaEz :: Color D65 JzCzHz -> Color D65 JzCzHz -> Double
 deltaEz (JzCzHz jz1 cz1 hz1) (JzCzHz jz2 cz2 hz2) = dJ ^ 2 + dC ^ 2 + dH2
   where
     dJ = jz2 - jz1

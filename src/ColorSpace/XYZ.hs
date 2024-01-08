@@ -17,6 +17,7 @@ module ColorSpace.XYZ
     D55,
     D50,
     chromAdapt,
+    chromIso,
     apca,
   )
 where
@@ -62,16 +63,16 @@ data D75 = D75
 instance Illuminant D75 where
   refWhite = XYZ {x = 0.94972, y = 1.00000, z = 1.22638}
 
-class ColorSpace csp where
-  xyz :: Illuminant il => Iso' (Color il csp) (Color il XYZ)
+class Illuminant il => ColorSpace csp il where
+  xyz :: Iso' (Color il csp) (Color il XYZ)
 
-instance ColorSpace XYZ where
+instance Illuminant il => ColorSpace XYZ il where
   xyz = iso id id
 
 {-# COMPLETE XYZ #-}
 
 pattern XYZ ::
-  (ColorSpace csp, Illuminant il) =>
+  (ColorSpace csp il, Illuminant il) =>
   Double ->
   Double ->
   Double ->
@@ -110,6 +111,9 @@ chromAdapt = bradfordConeResponseInv . scale . bradfordConeResponse
         beta_s / beta_d * beta
       )
 
+chromIso :: forall i1 i2. (Illuminant i1, Illuminant i2) => Iso' (Color i1 XYZ) (Color i2 XYZ)
+chromIso = iso (chromAdapt) (chromAdapt)
+
 bradfordConeResponse :: Illuminant il => Color il XYZ -> (Double, Double, Double)
 bradfordConeResponse (XYZ x y z) = (rho, gamma, beta)
   where
@@ -128,7 +132,7 @@ bradfordConeResponseInv (rho, gamma, beta) = (XYZ x y z)
 -- | Measure contrast between foreground and background colors to ensure readability. Note that the first argument is the text color, the second
 -- | is background color.
 -- | Taken from https://www.myndex.com/APCA/, refer to that for details.
-apca :: ColorSpace csp => Color D65 csp -> Color D65 csp -> Double
+apca :: ColorSpace csp D65 => Color D65 csp -> Color D65 csp -> Double
 apca tx bg
   | abs s_apc < w_clamp = 0.0
   | s_apc > 0 = 100 * (s_apc - w_off)

@@ -20,14 +20,14 @@ import Optics.Re (re)
 
 data Luv
 
-instance ColorSpace Luv where
+instance Illuminant il => ColorSpace Luv il where
   xyz = iso luvToXYZ xyzToLuv
 
-luv :: (ColorSpace csp, Illuminant il) => Iso' (Color il csp) (Color il Luv)
+luv :: ColorSpace csp il => Iso' (Color il csp) (Color il Luv)
 luv = xyz % (re xyz)
 
 pattern Luv ::
-  (ColorSpace csp, Illuminant il) =>
+  ColorSpace csp il =>
   Double ->
   Double ->
   Double ->
@@ -89,14 +89,14 @@ luvToXYZ (Color l u v) = Color x y z
 -- | LCH(uv) color (note that the angle is given in radians, not degrees)
 data LCHuv
 
-instance ColorSpace LCHuv where
+instance Illuminant il => ColorSpace LCHuv il where
   xyz = re luv_lch % (xyz @Luv)
 
-lchuv :: (ColorSpace csp, Illuminant il) => Iso' (Color il csp) (Color il LCHuv)
+lchuv :: ColorSpace csp il => Iso' (Color il csp) (Color il LCHuv)
 lchuv = xyz % (re xyz)
 
 pattern LCHuv ::
-  (ColorSpace csp, Illuminant il) =>
+  ColorSpace csp il =>
   Double ->
   Double ->
   Double ->
