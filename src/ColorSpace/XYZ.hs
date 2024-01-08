@@ -16,6 +16,7 @@ module ColorSpace.XYZ
     D65,
     D55,
     D50,
+    chromAdapt,
   )
 where
 
@@ -90,3 +91,34 @@ instance Illuminant il => LabelOptic "y" A_Lens (Color il XYZ) (Color il XYZ) Do
 instance Illuminant il => LabelOptic "z" A_Lens (Color il XYZ) (Color il XYZ) Double Double where
   labelOptic :: Lens' (Color il XYZ) Double
   labelOptic = lens (\(Color _ _ z) -> z) (\(Color x y _) z -> Color x y z)
+
+--------
+-- Chromatic Adaptation
+-- based on http://www.brucelindbloom.com/index.html?Eqn_ChromAdapt.html
+-- I will use Bradford Scaling
+
+-- | Chromatic adaptation between illuminants using Bradford scaling
+chromAdapt :: forall i1 i2. (Illuminant i1, Illuminant i2) => Color i1 XYZ -> Color i2 XYZ
+chromAdapt = bradfordConeResponseInv . scale . bradfordConeResponse
+  where
+    (rho_s, gamma_s, beta_s) = bradfordConeResponse $ refWhite @i1
+    (rho_d, gamma_d, beta_d) = bradfordConeResponse $ refWhite @i2
+    scale (rho, gamma, beta) =
+      ( rho_s / rho_d * rho,
+        gamma_s / gamma_d * gamma,
+        beta_s / beta_d * beta
+      )
+
+bradfordConeResponse :: Illuminant il => Color il XYZ -> (Double, Double, Double)
+bradfordConeResponse (XYZ x y z) = (rho, gamma, beta)
+  where
+    rho = 0.8951000 * x + 0.2664000 * y - 0.1614000 * z
+    gamma = -0.7502000 * x + 1.7135000 * y + 0.0367000 * z
+    beta = 0.0389000 * x - 0.0685000 * y + 1.0296000 * z
+
+bradfordConeResponseInv :: Illuminant il => (Double, Double, Double) -> Color il XYZ
+bradfordConeResponseInv (rho, gamma, beta) = (XYZ x y z)
+  where
+    x = 0.9869929 * rho - 0.1470543 * gamma + 0.1599627 * beta
+    y = 0.9869929 * rho - 0.1470543 * gamma + 0.1599627 * beta
+    z = 0.9869929 * rho - 0.1470543 * gamma + 0.1599627 * beta
