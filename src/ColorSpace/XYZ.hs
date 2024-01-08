@@ -17,15 +17,16 @@ module ColorSpace.XYZ
     D55,
     D50,
     chromAdapt,
+    apca,
   )
 where
 
 import GHC.Generics (Generic)
-import Optics.Core (A_Lens, LabelOptic (..), LabelOptic' (..), review)
+import Optics.Core (A_Lens, LabelOptic (..), LabelOptic' (..), review, (^.))
 import Optics.Getter
 import Optics.Iso
 import Optics.Lens
-import Optics.Optic (NoIx)
+import Optics.Optic (NoIx, (%))
 
 data Color il csp
   = Color
@@ -122,3 +123,34 @@ bradfordConeResponseInv (rho, gamma, beta) = (XYZ x y z)
     x = 0.9869929 * rho - 0.1470543 * gamma + 0.1599627 * beta
     y = 0.9869929 * rho - 0.1470543 * gamma + 0.1599627 * beta
     z = 0.9869929 * rho - 0.1470543 * gamma + 0.1599627 * beta
+
+-- | APCA W3 color contrast
+-- | Measure contrast between foreground and background colors to ensure readability. Note that the first argument is the text color, the second
+-- | is background color.
+-- | Taken from https://www.myndex.com/APCA/, refer to that for details.
+apca :: ColorSpace csp => Color D65 csp -> Color D65 csp -> Double
+apca tx bg
+  | abs s_apc < w_clamp = 0.0
+  | s_apc > 0 = 100 * (s_apc - w_off)
+  | s_apc < 0 = 100 * (s_apc + w_off)
+  where
+    s_apc
+      | ybg > ytx = w_scale * (ybg ** n_bg - ytx ** n_tx)
+      | otherwise = w_scale * (ybg ** r_bg - ytx ** r_tx)
+    ytx = tx ^. xyz % #y % to sc
+    ybg = bg ^. xyz % #y % to sc
+    sc y
+      | y < 0 = 0
+      | y < b_thrsh = y + (b_thrsh - y) ** b_clip
+      | otherwise = y
+    -- powercurve
+    n_tx = 0.57
+    n_bg = 0.56
+    r_tx = 0.63
+    r_bg = 0.65
+    -- clamps and scaler
+    b_clip = 1.414
+    b_thrsh = 0.022
+    w_scale = 1.14
+    w_off = 0.027
+    w_clamp = 0.1
