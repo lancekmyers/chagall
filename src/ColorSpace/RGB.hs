@@ -11,13 +11,18 @@ module RGB
     rgbLin,
     pattern RGB,
     pattern RGBLin,
+    srgbToHex,
+    srgbFromHex,
   )
 where
 
 import ColorSpace.XYZ
+import Data.Bits (Bits (shiftR), shiftL)
+import Numeric (readHex)
 import Optics.Core (A_Lens, Iso', Lens', iso, lens, review, view, (%))
 import Optics.Label (LabelOptic (..))
 import Optics.Re (re)
+import Text.Printf (printf)
 
 -- | Linear sRGB
 data RGBLin
@@ -101,3 +106,36 @@ instance LabelOptic "g" A_Lens (Color D65 RGB) (Color D65 RGB) Double Double whe
 instance LabelOptic "b" A_Lens (Color D65 RGB) (Color D65 RGB) Double Double where
   labelOptic :: Lens' (Color D65 RGB) Double
   labelOptic = lens (\(Color _ _ b) -> b) (\(Color r g _) b -> Color r g b)
+
+-- >>> srgbToWords (Color 0.2 0.3 0.5 :: Color D65 RGB)
+-- (51,76,128)
+srgbToWords :: Color D65 RGB -> (Word, Word, Word)
+srgbToWords (Color r g b) = (r', g', b')
+  where
+    r' = round (r * 255)
+    g' = round (g * 255)
+    b' = round (b * 255)
+
+-- >>> srgbToHex (Color (216 / 255) (46 / 255) (157 / 255) :: Color D65 RGB)
+-- "#d82e9d"
+srgbToHex :: Color D65 RGB -> String
+srgbToHex (srgbToWords -> (r, g, b)) = printf "#%02x%02x%02x" r g b
+
+-- >>> srgbFromHex "#d82e9d"
+-- Just (Color 0.8470588235294118 0.1803921568627451 0.615686274509804)
+srgbFromHex :: String -> Maybe (Color D65 RGB)
+srgbFromHex ('#' : _r' : _r : _g' : _g : _b' : _b : []) =
+  Color <$> r <*> g <*> b
+  where
+    hexDig hd
+      | hd <= '9' && hd >= '0' = Just $ fromEnum hd - 48
+      | hd <= 'f' && hd >= 'a' = Just $ 10 + fromEnum hd - 97
+      | otherwise = Nothing
+    hex2Dig d1 d2 = do
+      x1 <- hexDig d1
+      x2 <- hexDig d2
+      return $ shiftL x1 4 + x2
+    r = (/ 255.0) . fromIntegral <$> hex2Dig _r' _r
+    g = (/ 255.0) . fromIntegral <$> hex2Dig _g' _g
+    b = (/ 255.0) . fromIntegral <$> hex2Dig _b' _b
+srgbFromHex _ = Nothing
