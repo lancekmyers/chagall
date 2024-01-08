@@ -100,6 +100,9 @@ instance Illuminant il => LabelOptic "z" A_Lens (Color il XYZ) (Color il XYZ) Do
 -- I will use Bradford Scaling
 
 -- | Chromatic adaptation between illuminants using Bradford scaling
+{-# RULES "identity chromatic adaptation" chromAdapt = id #-}
+
+{-# INLINE [2] chromAdapt #-}
 chromAdapt :: forall i1 i2. (Illuminant i1, Illuminant i2) => Color i1 XYZ -> Color i2 XYZ
 chromAdapt = bradfordConeResponseInv . scale . bradfordConeResponse
   where
