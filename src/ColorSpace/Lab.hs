@@ -10,6 +10,7 @@ module ColorSpace.Lab
     pattern LCHab,
     LCHab,
     lchab,
+    deltaE76,
   )
 where
 
@@ -136,3 +137,13 @@ lchabTolab (Color l c h) = Color l a b
   where
     a = c * cos h
     b = c * sin h
+
+------
+-- Color difference
+-- based on http://www.brucelindbloom.com/index.html?Eqn_Spect_to_XYZ.html
+
+-- | Color difference Delta E (CIE 1976)
+deltaE76 :: Illuminant il => Color il Lab -> Color il Lab -> Double
+deltaE76 (Lab l1 a1 b1) (Lab l2 a2 b2) =
+  sqrt $
+    (l1 - l2) ^ 2 + (a1 - a2) ^ 2 + (b1 - b2) ^ 2
