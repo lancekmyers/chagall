@@ -19,11 +19,12 @@ module ColorSpace.XYZ
     chromAdapt,
     chromIso,
     apca,
+    channels,
   )
 where
 
 import GHC.Generics (Generic)
-import Optics.Core (A_Lens, LabelOptic (..), LabelOptic' (..), review, (^.))
+import Optics.Core (A_Lens, Each (..), LabelOptic (..), LabelOptic' (..), review, (^.))
 import Optics.Getter
 import Optics.Iso
 import Optics.Lens
@@ -35,6 +36,11 @@ data Color il csp
       {-# UNPACK #-} !Double
       {-# UNPACK #-} !Double
   deriving (Show, Eq, Ord)
+
+channels ::
+  (ColorSpace csp il, ColorSpace csp' il') =>
+  Iso (Color il csp) (Color il' csp') (Double, Double, Double) (Double, Double, Double)
+channels = iso (\(Color a b c) -> (a, b, c)) (\(a, b, c) -> (Color a b c))
 
 data XYZ
 

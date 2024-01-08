@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -19,7 +20,7 @@ where
 import ColorSpace.XYZ
 import Data.Bits (Bits (shiftR), shiftL)
 import Numeric (readHex)
-import Optics.Core (A_Lens, Iso', Lens', iso, lens, review, view, (%))
+import Optics.Core (A_Lens, Each (each), Iso', Lens', iso, lens, over, review, to, view, (%), (%~))
 import Optics.Label (LabelOptic (..))
 import Optics.Re (re)
 import Text.Printf (printf)
@@ -53,8 +54,8 @@ pattern RGBLin ::
   Double ->
   Double ->
   Color il csp
-pattern RGBLin {r, g, b} <-
-  (view rgbLin -> Color r g b)
+pattern RGBLin {rl, gl, bl} <-
+  (view rgbLin -> Color rl gl bl)
   where
     RGBLin r g b = review rgbLin (Color r g b :: Color D65 RGBLin)
 
@@ -74,14 +75,15 @@ compandIso :: Iso' (Color D65 RGBLin) (Color D65 RGB)
 compandIso = iso compand compandInv
 
 compand :: Color D65 RGBLin -> Color D65 RGB
-compand (Color r g b) = Color (go r) (go g) (go b)
+compand = (channels % each) %~ go
   where
+    go :: Double -> Double
     go c
       | c <= 0.0031308 = 12.92 * c
       | otherwise = 1.055 * (c ** 0.41667) - 0.055
 
 compandInv :: Color D65 RGB -> Color D65 RGBLin
-compandInv (Color r g b) = Color (go r) (go g) (go b)
+compandInv = (channels % each) %~ go
   where
     go c
       | c <= 0.04045 = c / 12.92
@@ -108,6 +110,18 @@ instance LabelOptic "g" A_Lens (Color D65 RGB) (Color D65 RGB) Double Double whe
 
 instance LabelOptic "b" A_Lens (Color D65 RGB) (Color D65 RGB) Double Double where
   labelOptic :: Lens' (Color D65 RGB) Double
+  labelOptic = lens (\(Color _ _ b) -> b) (\(Color r g _) b -> Color r g b)
+
+instance LabelOptic "rl" A_Lens (Color D65 RGBLin) (Color D65 RGBLin) Double Double where
+  labelOptic :: Lens' (Color D65 RGBLin) Double
+  labelOptic = lens (\(Color r _ _) -> r) (\(Color _ g b) r -> Color r g b)
+
+instance LabelOptic "gl" A_Lens (Color D65 RGBLin) (Color D65 RGBLin) Double Double where
+  labelOptic :: Lens' (Color D65 RGBLin) Double
+  labelOptic = lens (\(Color _ g _) -> g) (\(Color r _ b) g -> Color r g b)
+
+instance LabelOptic "bl" A_Lens (Color D65 RGBLin) (Color D65 RGBLin) Double Double where
+  labelOptic :: Lens' (Color D65 RGBLin) Double
   labelOptic = lens (\(Color _ _ b) -> b) (\(Color r g _) b -> Color r g b)
 
 -- >>> srgbToWords (Color 0.2 0.3 0.5 :: Color D65 RGB)
