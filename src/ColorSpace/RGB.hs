@@ -14,13 +14,17 @@ module ColorSpace.RGB
     pattern RGBLin,
     srgbToHex,
     srgbFromHex,
+    HSL,
+    HSV,
   )
 where
 
 import ColorSpace.XYZ
 import Data.Bits (Bits (shiftR), shiftL)
+import Data.Fixed (mod')
+import Data.Maybe (fromMaybe)
 import Numeric (readHex)
-import Optics.Core (A_Lens, Each (each), Iso', Lens', iso, lens, over, review, simple, to, view, (%), (%~))
+import Optics.Core (A_Lens, Each (each), Iso', LabelOptic' (..), Lens', iso, lens, maximumOf, minimumOf, over, review, simple, to, view, (%), (%~))
 import Optics.Label (LabelOptic (..))
 import Optics.Re (re)
 import Text.Printf (printf)
@@ -156,3 +160,111 @@ srgbFromHex ('#' : _r' : _r : _g' : _g : _b' : _b : []) =
     g = (/ 255.0) . fromIntegral <$> hex2Dig _g' _g
     b = (/ 255.0) . fromIntegral <$> hex2Dig _b' _b
 srgbFromHex _ = Nothing
+
+-------
+-- HSL + HSV
+-- The following conversion formulas are from wikipedia
+
+data HSL
+
+data HSV
+
+rgb2hsl :: Color D65 RGB -> Color D65 HSL
+rgb2hsl col@(RGB r g b) = Color h sL l
+  where
+    xmax = fromMaybe 0 $ maximumOf channels col
+    xmin = fromMaybe 0 $ minimumOf channels col
+    c = xmax - xmin
+    h'
+      | c == 0 = 0
+      | xmax == r = (g - b) / c
+      | xmax == g = (b - r) / c + 2
+      | xmax == b = (r - g) / c + 4
+    h = pi / 3.0 * (mod' h' 6.0)
+    l = (xmax + xmin) / 2
+    sL
+      | l == 0 || l == 1 = 0
+      | otherwise = (xmax - l) / (l `min` (1 - l))
+
+rgb2hsv :: Color D65 RGB -> Color D65 HSV
+rgb2hsv col@(RGB r g b) = Color h sV v
+  where
+    xmax = fromMaybe 0 $ maximumOf channels col
+    v = xmax
+    xmin = fromMaybe 0 $ minimumOf channels col
+    c = xmax - xmin
+    h'
+      | c == 0 = 0
+      | xmax == r = (g - b) / c
+      | xmax == g = (b - r) / c + 2
+      | xmax == b = (r - g) / c + 4
+    h = pi / 3.0 * (mod' h' 6.0)
+    l = (xmax + xmin) / 2
+    sV
+      | v == 0 = 0
+      | otherwise = c / v
+
+hsl2rgb :: Color D65 HSL -> Color D65 RGB
+hsl2rgb (Color h s l) = RGB {r, g, b}
+  where
+    r = f 0
+    g = f 8
+    b = f 4
+    f n = l - a * (max (-1) $ (k - 3) `min` (9 - k) `min` (9 - k))
+      where
+        a = s * (min l $ 1 - l)
+        k = (n + (h / (pi / 6))) `mod'` 12
+
+hsv2rgb :: Color D65 HSV -> Color D65 RGB
+hsv2rgb (Color h s v) = RGB {r, g, b}
+  where
+    r = f 5
+    g = f 3
+    b = f 1
+    f n = v - v * s * (0 `max` (k `min` 1 `min` (4 - k)))
+      where
+        k = (n + (h / (pi / 3))) `mod'` 6
+
+instance ColorSpace HSL D65 where
+  xyz = (iso hsl2rgb rgb2hsl) % (xyz @RGB)
+
+instance ColorSpace HSV D65 where
+  xyz = (iso hsv2rgb rgb2hsv) % (xyz @RGB)
+
+pattern HSV ::
+  Double ->
+  Double ->
+  Double ->
+  Color D65 HSV
+pattern HSV {h, s, v} = Color h s v
+
+pattern HSL ::
+  Double ->
+  Double ->
+  Double ->
+  Color D65 HSL
+pattern HSL {h, s, l} = Color h s l
+
+instance LabelOptic "h" A_Lens (Color D65 HSL) (Color D65 HSL) Double Double where
+  labelOptic :: Lens' (Color D65 HSL) Double
+  labelOptic = lens (\(HSL h _ _) -> h) (\(HSL _ s l) h -> HSL h s l)
+
+instance LabelOptic "s" A_Lens (Color D65 HSL) (Color D65 HSL) Double Double where
+  labelOptic :: Lens' (Color D65 HSL) Double
+  labelOptic = lens (\(HSL _ s _) -> s) (\(HSL h _ l) s -> HSL h s l)
+
+instance LabelOptic "l" A_Lens (Color D65 HSL) (Color D65 HSL) Double Double where
+  labelOptic :: Lens' (Color D65 HSL) Double
+  labelOptic = lens (\(HSL _ _ l) -> l) (\(HSL h s _) l -> HSL h s l)
+
+instance LabelOptic "h" A_Lens (Color D65 HSV) (Color D65 HSV) Double Double where
+  labelOptic :: Lens' (Color D65 HSV) Double
+  labelOptic = lens (\(HSV h _ _) -> h) (\(HSV _ s v) h -> HSV h s v)
+
+instance LabelOptic "s" A_Lens (Color D65 HSV) (Color D65 HSV) Double Double where
+  labelOptic :: Lens' (Color D65 HSV) Double
+  labelOptic = lens (\(HSV _ s _) -> s) (\(HSV h _ v) s -> HSV h s v)
+
+instance LabelOptic "l" A_Lens (Color D65 HSV) (Color D65 HSV) Double Double where
+  labelOptic :: Lens' (Color D65 HSV) Double
+  labelOptic = lens (\(HSV _ _ v) -> v) (\(HSV h s _) v -> HSV h s v)
