@@ -75,7 +75,7 @@ compandIso :: Iso' (Color D65 RGBLin) (Color D65 RGB)
 compandIso = iso compand compandInv
 
 compand :: Color D65 RGBLin -> Color D65 RGB
-compand = (channels % each) %~ go
+compand = channels %~ go
   where
     go :: Double -> Double
     go c
@@ -83,7 +83,7 @@ compand = (channels % each) %~ go
       | otherwise = 1.055 * (c ** 0.41667) - 0.055
 
 compandInv :: Color D65 RGB -> Color D65 RGBLin
-compandInv = (channels % each) %~ go
+compandInv = channels %~ go
   where
     go c
       | c <= 0.04045 = c / 12.92

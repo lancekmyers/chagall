@@ -24,7 +24,7 @@ module ColorSpace.XYZ
 where
 
 import GHC.Generics (Generic)
-import Optics.Core (A_Lens, Each (..), LabelOptic (..), LabelOptic' (..), review, (^.))
+import Optics.Core (A_Lens, Each (..), LabelOptic (..), LabelOptic' (..), Traversal, Traversal', review, traversalVL, (^.))
 import Optics.Getter
 import Optics.Iso
 import Optics.Lens
@@ -37,10 +37,15 @@ data Color il csp
       {-# UNPACK #-} !Double
   deriving (Show, Eq, Ord)
 
+-- | Access the channels of a Color.
+-- Note that this will cast between color spaces.
+-- Use carefully.
 channels ::
-  (ColorSpace csp il, ColorSpace csp' il') =>
-  Iso (Color il csp) (Color il' csp') (Double, Double, Double) (Double, Double, Double)
-channels = iso (\(Color a b c) -> (a, b, c)) (\(a, b, c) -> (Color a b c))
+  forall csp il csp' il'.
+  Traversal (Color il csp) (Color il' csp') Double Double
+channels = traversalVL go
+  where
+    go f (Color a b c) = Color <$> (f a) <*> (f b) <*> (f c)
 
 data XYZ
 
