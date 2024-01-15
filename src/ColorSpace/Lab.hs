@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ViewPatterns #-}
 
@@ -14,6 +15,7 @@ module ColorSpace.Lab
   )
 where
 
+import ColorSpace.Cylindrical
 import ColorSpace.XYZ
 import Optics.Core (A_Lens, Iso', Lens', iso, lens, simple, view, (%))
 import Optics.Label (LabelOptic (..))
@@ -101,60 +103,20 @@ labToXYZ (Color l a b) = Color (xr' * xr) (yr' * yr) (zr' * zr)
     fy = (l + 16) / 116
 
 -- | LCH(ab) color (note that the angle is given in radians, not degrees)
-data LCHab
+type LCHab = Cyl Lab
 
-instance Illuminant il => ColorSpace LCHab il where
-  xyz = re lab_lch % (xyz @Lab)
+instance Illuminant il => CylCsp Lab il
 
-{-# RULES "lchab iso identity on lchab D65" lchab @LCHab @D65 = simple #-}
-
-{-# RULES "lchab iso identity on lchab D50" lchab @LCHab @D50 = simple #-}
-
-{-# RULES "lchab iso identity on lchab D55" lchab @LCHab @D55 = simple #-}
-
-{-# RULES "lchab iso identity on lchab D75" lchab @LCHab @D75 = simple #-}
-
-{-# INLINE [1] lchab #-}
 lchab :: ColorSpace csp il => Iso' (Color il csp) (Color il LCHab)
-lchab = xyz % (re xyz)
+lchab = lab % cyl
 
 pattern LCHab ::
-  ColorSpace csp il =>
+  ColorSpace LCHab il =>
   Double ->
   Double ->
   Double ->
-  Color il csp
-pattern LCHab {l, c, h} <-
-  (view lchab -> Color l c h)
-  where
-    LCHab l c h = view (re lchab) (Color l c h :: Color il LCHab)
-
-instance Illuminant il => LabelOptic "l" A_Lens (Color il LCHab) (Color il LCHab) Double Double where
-  labelOptic :: Lens' (Color il LCHab) Double
-  labelOptic = lens (\(Color l _ _) -> l) (\(Color _ c h) l -> Color l c h)
-
-instance Illuminant il => LabelOptic "c" A_Lens (Color il LCHab) (Color il LCHab) Double Double where
-  labelOptic :: Lens' (Color il LCHab) Double
-  labelOptic = lens (\(Color _ c _) -> c) (\(Color l _ h) c -> Color l c h)
-
-instance Illuminant il => LabelOptic "h" A_Lens (Color il LCHab) (Color il LCHab) Double Double where
-  labelOptic :: Lens' (Color il LCHab) Double
-  labelOptic = lens (\(Color _ _ h) -> h) (\(Color l c _) h -> Color l c h)
-
-lab_lch :: Illuminant il => Iso' (Color il Lab) (Color il LCHab)
-lab_lch = iso labTolchab lchabTolab
-
-labTolchab :: Illuminant il => Color il Lab -> Color il LCHab
-labTolchab (Color l a b) = Color l c h
-  where
-    c = sqrt (a ^ 2 + b ^ 2)
-    h = atan2 a b
-
-lchabTolab :: Illuminant il => Color il LCHab -> Color il Lab
-lchabTolab (Color l c h) = Color l a b
-  where
-    a = c * cos h
-    b = c * sin h
+  Color il LCHab
+pattern LCHab {l, c, h} = Color l c h
 
 ------
 -- Color difference

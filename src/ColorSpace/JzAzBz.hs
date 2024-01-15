@@ -15,6 +15,7 @@ module ColorSpace.JzAzBz
   )
 where
 
+import ColorSpace.Cylindrical
 import ColorSpace.XYZ
 import Optics.Core (A_Lens, Iso', Lens', iso, lens, simple, view, (%))
 import Optics.Label (LabelOptic (..))
@@ -89,30 +90,15 @@ instance Illuminant il => LabelOptic "bz" A_Lens (Color il JzAzBz) (Color il JzA
   labelOptic = lens (\(Color _ _ b) -> b) (\(Color j a _) b -> Color j a b)
 
 -- | Polar coordinate version of JzAzBz
-data JzCzHz
+type JzCzHz = Cyl JzAzBz
 
-instance ColorSpace JzCzHz D65 where
-  xyz = re jzazbz_jzczhz % (xyz @JzAzBz)
+instance CylCsp JzAzBz D65
 
-jch :: ColorSpace csp il => Iso' (Color il csp) (Color' JzCzHz)
-jch = jab % jzazbz_jzczhz
+pattern JzCzHz :: Double -> Double -> Double -> Color il csp
+pattern JzCzHz j c h = Color j c h
 
-jzazbz_jzczhz :: Illuminant il => Iso' (Color il JzAzBz) (Color il JzCzHz)
-jzazbz_jzczhz = iso fwd bwd
-  where
-    fwd (Color jz az bz) = Color jz (sqrt $ az * az + bz * bz) (atan2 bz az)
-    bwd (Color jz cz hz) = Color jz (cz * cos hz) (cz * sin hz)
-
-pattern JzCzHz ::
-  ColorSpace csp il =>
-  Double ->
-  Double ->
-  Double ->
-  Color il csp
-pattern JzCzHz {jz, cz, hz} <-
-  (view jch -> Color jz cz hz)
-  where
-    JzCzHz jz az bz = view (re jab) (Color jz az bz :: Color' JzAzBz)
+jch :: ColorSpace csp il => Iso' (Color il csp) (Color D65 (Cyl JzAzBz))
+jch = jab % cyl
 
 -- -- | Color difference Delta Ez
 deltaEz :: Color' JzCzHz -> Color' JzCzHz -> Double

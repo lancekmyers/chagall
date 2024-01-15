@@ -13,6 +13,7 @@ module ColorSpace.Luv
   )
 where
 
+import ColorSpace.Cylindrical
 import ColorSpace.XYZ
 import Optics.Core (A_Lens, Iso', Lens', iso, lens, simple, view, (%))
 import Optics.Label (LabelOptic (..))
@@ -96,22 +97,12 @@ luvToXYZ (Color l u v) = Color x y z
     v0 = 9 * yr / (xr + 15 * yr + 3 * zr)
 
 -- | LCH(uv) color (note that the angle is given in radians, not degrees)
-data LCHuv
+type LCHuv = Cyl Luv
 
-instance Illuminant il => ColorSpace LCHuv il where
-  xyz = re luv_lch % (xyz @Luv)
+instance Illuminant il => CylCsp Luv il
 
-{-# RULES "lchuv iso identity on lchuv D65" lchuv @LCHuv @D65 = simple #-}
-
-{-# RULES "lchuv iso identity on lchuv D50" lchuv @LCHuv @D50 = simple #-}
-
-{-# RULES "lchuv iso identity on lchuv D55" lchuv @LCHuv @D55 = simple #-}
-
-{-# RULES "lchuv iso identity on lchuv D75" lchuv @LCHuv @D75 = simple #-}
-
-{-# INLINE [1] lchuv #-}
 lchuv :: ColorSpace csp il => Iso' (Color il csp) (Color il LCHuv)
-lchuv = xyz % (re xyz)
+lchuv = luv % cyl
 
 pattern LCHuv ::
   ColorSpace csp il =>
@@ -119,34 +110,4 @@ pattern LCHuv ::
   Double ->
   Double ->
   Color il csp
-pattern LCHuv {l, c, h} <-
-  (view lchuv -> Color l c h)
-  where
-    LCHuv l c h = view (re lchuv) (Color l c h :: Color il LCHuv)
-
-instance Illuminant il => LabelOptic "l" A_Lens (Color il LCHuv) (Color il LCHuv) Double Double where
-  labelOptic :: Lens' (Color il LCHuv) Double
-  labelOptic = lens (\(Color l _ _) -> l) (\(Color _ c h) l -> Color l c h)
-
-instance Illuminant il => LabelOptic "c" A_Lens (Color il LCHuv) (Color il LCHuv) Double Double where
-  labelOptic :: Lens' (Color il LCHuv) Double
-  labelOptic = lens (\(Color _ c _) -> c) (\(Color l _ h) c -> Color l c h)
-
-instance Illuminant il => LabelOptic "h" A_Lens (Color il LCHuv) (Color il LCHuv) Double Double where
-  labelOptic :: Lens' (Color il LCHuv) Double
-  labelOptic = lens (\(Color _ _ h) -> h) (\(Color l c _) h -> Color l c h)
-
-luv_lch :: Illuminant il => Iso' (Color il Luv) (Color il LCHuv)
-luv_lch = iso luvTolchuv lchuvToluv
-
-luvTolchuv :: Illuminant il => Color il Luv -> Color il LCHuv
-luvTolchuv (Color l u v) = Color l c h
-  where
-    c = sqrt (u ^ 2 + v ^ 2)
-    h = atan2 u v
-
-lchuvToluv :: Illuminant il => Color il LCHuv -> Color il Luv
-lchuvToluv (Color l c h) = Color l u v
-  where
-    u = c * cos h
-    v = c * sin h
+pattern LCHuv {l, c, h} = Color l c h
