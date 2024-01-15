@@ -35,10 +35,10 @@ data RGBLin
 instance ColorSpace RGBLin D65 where
   xyz = iso rgbLinToXYZ xyzToRGBLin
 
-rgbLin :: ColorSpace csp il => Iso' (Color il csp) (Color D65 RGBLin)
+rgbLin :: ColorSpace csp il => Iso' (Color il csp) (Color' RGBLin)
 rgbLin = xyz % chromIso % (re xyz)
 
-rgbLinToXYZ :: Color D65 RGBLin -> Color D65 XYZ
+rgbLinToXYZ :: Color' RGBLin -> Color' XYZ
 rgbLinToXYZ (Color r g b) = Color x y z
   where
     x = 0.4124564 * r + 0.3575761 * g + 0.1804375 * b
@@ -61,7 +61,7 @@ pattern RGBLin ::
 pattern RGBLin {rl, gl, bl} <-
   (view rgbLin -> Color rl gl bl)
   where
-    RGBLin r g b = review rgbLin (Color r g b :: Color D65 RGBLin)
+    RGBLin r g b = review rgbLin (Color r g b :: Color' RGBLin)
 
 -- | sRGB (nonLinear)
 data RGB
@@ -75,10 +75,10 @@ instance ColorSpace RGB D65 where
 rgb :: forall csp il. ColorSpace csp il => Iso' (Color il csp) (Color D65 RGB)
 rgb = xyz % chromIso % (re xyz)
 
-compandIso :: Iso' (Color D65 RGBLin) (Color D65 RGB)
+compandIso :: Iso' (Color' RGBLin) (Color' RGB)
 compandIso = iso compand compandInv
 
-compand :: Color D65 RGBLin -> Color D65 RGB
+compand :: Color' RGBLin -> Color' RGB
 compand = channels %~ go
   where
     go :: Double -> Double
@@ -86,7 +86,7 @@ compand = channels %~ go
       | c <= 0.0031308 = 12.92 * c
       | otherwise = 1.055 * (c ** 0.41667) - 0.055
 
-compandInv :: Color D65 RGB -> Color D65 RGBLin
+compandInv :: Color' RGB -> Color' RGBLin
 compandInv = channels %~ go
   where
     go c
@@ -102,35 +102,35 @@ pattern RGB ::
 pattern RGB {r, g, b} <-
   (view rgb -> Color r g b)
   where
-    RGB r g b = review rgb (Color r g b :: Color D65 RGB)
+    RGB r g b = review rgb (Color r g b :: Color' RGB)
 
-instance LabelOptic "r" A_Lens (Color D65 RGB) (Color D65 RGB) Double Double where
-  labelOptic :: Lens' (Color D65 RGB) Double
+instance LabelOptic "r" A_Lens (Color' RGB) (Color' RGB) Double Double where
+  labelOptic :: Lens' (Color' RGB) Double
   labelOptic = lens (\(Color r _ _) -> r) (\(Color _ g b) r -> Color r g b)
 
-instance LabelOptic "g" A_Lens (Color D65 RGB) (Color D65 RGB) Double Double where
-  labelOptic :: Lens' (Color D65 RGB) Double
+instance LabelOptic "g" A_Lens (Color' RGB) (Color' RGB) Double Double where
+  labelOptic :: Lens' (Color' RGB) Double
   labelOptic = lens (\(Color _ g _) -> g) (\(Color r _ b) g -> Color r g b)
 
-instance LabelOptic "b" A_Lens (Color D65 RGB) (Color D65 RGB) Double Double where
-  labelOptic :: Lens' (Color D65 RGB) Double
+instance LabelOptic "b" A_Lens (Color' RGB) (Color' RGB) Double Double where
+  labelOptic :: Lens' (Color' RGB) Double
   labelOptic = lens (\(Color _ _ b) -> b) (\(Color r g _) b -> Color r g b)
 
-instance LabelOptic "rl" A_Lens (Color D65 RGBLin) (Color D65 RGBLin) Double Double where
-  labelOptic :: Lens' (Color D65 RGBLin) Double
+instance LabelOptic "rl" A_Lens (Color' RGBLin) (Color' RGBLin) Double Double where
+  labelOptic :: Lens' (Color' RGBLin) Double
   labelOptic = lens (\(Color r _ _) -> r) (\(Color _ g b) r -> Color r g b)
 
-instance LabelOptic "gl" A_Lens (Color D65 RGBLin) (Color D65 RGBLin) Double Double where
-  labelOptic :: Lens' (Color D65 RGBLin) Double
+instance LabelOptic "gl" A_Lens (Color' RGBLin) (Color' RGBLin) Double Double where
+  labelOptic :: Lens' (Color' RGBLin) Double
   labelOptic = lens (\(Color _ g _) -> g) (\(Color r _ b) g -> Color r g b)
 
-instance LabelOptic "bl" A_Lens (Color D65 RGBLin) (Color D65 RGBLin) Double Double where
-  labelOptic :: Lens' (Color D65 RGBLin) Double
+instance LabelOptic "bl" A_Lens (Color' RGBLin) (Color' RGBLin) Double Double where
+  labelOptic :: Lens' (Color' RGBLin) Double
   labelOptic = lens (\(Color _ _ b) -> b) (\(Color r g _) b -> Color r g b)
 
 -- >>> srgbToWords (Color 0.2 0.3 0.5 :: Color D65 RGB)
 -- (51,76,128)
-srgbToWords :: Color D65 RGB -> (Word, Word, Word)
+srgbToWords :: Color' RGB -> (Word, Word, Word)
 srgbToWords (Color r g b) = (r', g', b')
   where
     r' = round (r * 255)
@@ -139,12 +139,12 @@ srgbToWords (Color r g b) = (r', g', b')
 
 -- >>> srgbToHex (Color (216 / 255) (46 / 255) (157 / 255) :: Color D65 RGB)
 -- "#d82e9d"
-srgbToHex :: Color D65 RGB -> String
+srgbToHex :: Color' RGB -> String
 srgbToHex (srgbToWords -> (r, g, b)) = printf "#%02x%02x%02x" r g b
 
 -- >>> srgbFromHex "#d82e9d"
 -- Just (Color 0.8470588235294118 0.1803921568627451 0.615686274509804)
-srgbFromHex :: String -> Maybe (Color D65 RGB)
+srgbFromHex :: String -> Maybe (Color' RGB)
 srgbFromHex ('#' : _r' : _r : _g' : _g : _b' : _b : []) =
   Color <$> r <*> g <*> b
   where
@@ -169,7 +169,7 @@ data HSL
 
 data HSV
 
-rgb2hsl :: Color D65 RGB -> Color D65 HSL
+rgb2hsl :: Color' RGB -> Color' HSL
 rgb2hsl col@(RGB r g b) = Color h sL l
   where
     xmax = fromMaybe 0 $ maximumOf channels col
@@ -186,7 +186,7 @@ rgb2hsl col@(RGB r g b) = Color h sL l
       | l == 0 || l == 1 = 0
       | otherwise = (xmax - l) / (l `min` (1 - l))
 
-rgb2hsv :: Color D65 RGB -> Color D65 HSV
+rgb2hsv :: Color' RGB -> Color' HSV
 rgb2hsv col@(RGB r g b) = Color h sV v
   where
     xmax = fromMaybe 0 $ maximumOf channels col
@@ -204,7 +204,7 @@ rgb2hsv col@(RGB r g b) = Color h sV v
       | v == 0 = 0
       | otherwise = c / v
 
-hsl2rgb :: Color D65 HSL -> Color D65 RGB
+hsl2rgb :: Color' HSL -> Color' RGB
 hsl2rgb (Color h s l) = RGB {r, g, b}
   where
     r = f 0
@@ -215,7 +215,7 @@ hsl2rgb (Color h s l) = RGB {r, g, b}
         a = s * (min l $ 1 - l)
         k = (n + (h / (pi / 6))) `mod'` 12
 
-hsv2rgb :: Color D65 HSV -> Color D65 RGB
+hsv2rgb :: Color' HSV -> Color' RGB
 hsv2rgb (Color h s v) = RGB {r, g, b}
   where
     r = f 5
@@ -235,36 +235,36 @@ pattern HSV ::
   Double ->
   Double ->
   Double ->
-  Color D65 HSV
+  Color' HSV
 pattern HSV {h, s, v} = Color h s v
 
 pattern HSL ::
   Double ->
   Double ->
   Double ->
-  Color D65 HSL
+  Color' HSL
 pattern HSL {h, s, l} = Color h s l
 
-instance LabelOptic "h" A_Lens (Color D65 HSL) (Color D65 HSL) Double Double where
-  labelOptic :: Lens' (Color D65 HSL) Double
+instance LabelOptic "h" A_Lens (Color' HSL) (Color' HSL) Double Double where
+  labelOptic :: Lens' (Color' HSL) Double
   labelOptic = lens (\(HSL h _ _) -> h) (\(HSL _ s l) h -> HSL h s l)
 
-instance LabelOptic "s" A_Lens (Color D65 HSL) (Color D65 HSL) Double Double where
-  labelOptic :: Lens' (Color D65 HSL) Double
+instance LabelOptic "s" A_Lens (Color' HSL) (Color' HSL) Double Double where
+  labelOptic :: Lens' (Color' HSL) Double
   labelOptic = lens (\(HSL _ s _) -> s) (\(HSL h _ l) s -> HSL h s l)
 
-instance LabelOptic "l" A_Lens (Color D65 HSL) (Color D65 HSL) Double Double where
-  labelOptic :: Lens' (Color D65 HSL) Double
+instance LabelOptic "l" A_Lens (Color' HSL) (Color' HSL) Double Double where
+  labelOptic :: Lens' (Color' HSL) Double
   labelOptic = lens (\(HSL _ _ l) -> l) (\(HSL h s _) l -> HSL h s l)
 
-instance LabelOptic "h" A_Lens (Color D65 HSV) (Color D65 HSV) Double Double where
-  labelOptic :: Lens' (Color D65 HSV) Double
+instance LabelOptic "h" A_Lens (Color' HSV) (Color' HSV) Double Double where
+  labelOptic :: Lens' (Color' HSV) Double
   labelOptic = lens (\(HSV h _ _) -> h) (\(HSV _ s v) h -> HSV h s v)
 
-instance LabelOptic "s" A_Lens (Color D65 HSV) (Color D65 HSV) Double Double where
-  labelOptic :: Lens' (Color D65 HSV) Double
+instance LabelOptic "s" A_Lens (Color' HSV) (Color' HSV) Double Double where
+  labelOptic :: Lens' (Color' HSV) Double
   labelOptic = lens (\(HSV _ s _) -> s) (\(HSV h _ v) s -> HSV h s v)
 
-instance LabelOptic "l" A_Lens (Color D65 HSV) (Color D65 HSV) Double Double where
-  labelOptic :: Lens' (Color D65 HSV) Double
+instance LabelOptic "l" A_Lens (Color' HSV) (Color' HSV) Double Double where
+  labelOptic :: Lens' (Color' HSV) Double
   labelOptic = lens (\(HSV _ _ v) -> v) (\(HSV h s _) v -> HSV h s v)

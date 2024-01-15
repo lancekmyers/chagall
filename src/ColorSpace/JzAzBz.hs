@@ -25,7 +25,7 @@ data JzAzBz
 instance ColorSpace JzAzBz D65 where
   xyz = iso jzazbzToXYZ xyzToJzazbz
 
-xyzToJzazbz :: Color D65 XYZ -> Color D65 JzAzBz
+xyzToJzazbz :: Color' XYZ -> Color' JzAzBz
 xyzToJzazbz (Color x y z) = Color jz az bz
   where
     lp = pq $ 0.674207838 * x + 0.382799340 * y - 0.047570458 * z
@@ -40,7 +40,7 @@ xyzToJzazbz (Color x y z) = Color jz az bz
       let x' = (x * 1e-4) ** 0.1593017578125
        in ((0.8359375 + 18.8515625 * x') / (1 + 18.6875 * x')) ** 134.034375
 
-jzazbzToXYZ :: Color D65 JzAzBz -> Color D65 XYZ
+jzazbzToXYZ :: Color' JzAzBz -> Color' XYZ
 jzazbzToXYZ (Color jz az bz) = Color x y z
   where
     jz' = jz + 1.6295499532821566e-11
@@ -62,7 +62,7 @@ jzazbzToXYZ (Color jz az bz) = Color x y z
 {-# RULES "jab iso identity on jab" jab @JzAzBz @D65 = simple #-}
 
 {-# INLINE [1] jab #-}
-jab :: forall csp il. ColorSpace csp il => Iso' (Color il csp) (Color D65 JzAzBz)
+jab :: forall csp il. ColorSpace csp il => Iso' (Color il csp) (Color' JzAzBz)
 jab = xyz % chromIso % (re xyz)
 
 pattern JzAzBz ::
@@ -94,7 +94,7 @@ data JzCzHz
 instance ColorSpace JzCzHz D65 where
   xyz = re jzazbz_jzczhz % (xyz @JzAzBz)
 
-jch :: ColorSpace csp il => Iso' (Color il csp) (Color D65 JzCzHz)
+jch :: ColorSpace csp il => Iso' (Color il csp) (Color' JzCzHz)
 jch = jab % jzazbz_jzczhz
 
 jzazbz_jzczhz :: Illuminant il => Iso' (Color il JzAzBz) (Color il JzCzHz)
@@ -112,10 +112,10 @@ pattern JzCzHz ::
 pattern JzCzHz {jz, cz, hz} <-
   (view jch -> Color jz cz hz)
   where
-    JzCzHz jz az bz = view (re jab) (Color jz az bz :: Color D65 JzAzBz)
+    JzCzHz jz az bz = view (re jab) (Color jz az bz :: Color' JzAzBz)
 
 -- -- | Color difference Delta Ez
-deltaEz :: Color D65 JzCzHz -> Color D65 JzCzHz -> Double
+deltaEz :: Color' JzCzHz -> Color' JzCzHz -> Double
 deltaEz (JzCzHz jz1 cz1 hz1) (JzCzHz jz2 cz2 hz2) = dJ ^ 2 + dC ^ 2 + dH2
   where
     dJ = jz2 - jz1

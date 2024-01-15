@@ -33,14 +33,14 @@ data LMS
 
 data LMS'
 
-xyzToCone :: Color D65 XYZ -> Color D65 LMS
+xyzToCone :: Color' XYZ -> Color' LMS
 xyzToCone (Color x y z) = Color l m s
   where
     l = 0.8189330101 * x + 0.3618667424 * y - 0.1288597137 * z
     m = 0.0329845436 * x + 0.9293118715 * y + 0.0361456387 * z
     s = 0.0482003018 * x + 0.2643662691 * y + 0.6338517070 * z
 
-xyzFromCone :: Color D65 LMS -> Color D65 XYZ
+xyzFromCone :: Color' LMS -> Color' XYZ
 xyzFromCone (Color l m s) = Color x y z
   where
     x = 1.22701 * l - 0.5578 * m + 0.281256 * s
@@ -50,27 +50,27 @@ xyzFromCone (Color l m s) = Color x y z
 instance ColorSpace LMS D65 where
   xyz = re lms
 
-lms :: Iso' (Color D65 XYZ) (Color D65 LMS)
+lms :: Iso' (Color' XYZ) (Color' LMS)
 lms = iso xyzToCone xyzFromCone
 
-m2 :: Color D65 LMS' -> Color D65 Oklab
+m2 :: Color' LMS' -> Color' Oklab
 m2 (Color l' m' s') = Color l a b
   where
     l = 0.2104542553 * l' + 0.7936177850 * m' - 0.0040720468 * s'
     a = 1.9779984951 * l' - 2.4285922050 * m' + 0.4505937099 * s'
     b = 0.0259040371 * l' + 0.7827717662 * m' - 0.8086757660 * s'
 
-m2Inv :: Color D65 Oklab -> Color D65 LMS'
+m2Inv :: Color' Oklab -> Color' LMS'
 m2Inv (Color l a b) = Color l' m' s'
   where
     l' = 1.0 * l + 0.396338 * a + 0.215804 * b
     m' = 1.0 * l - 0.105561 * a - 0.0638542 * b
     s' = 1.0 * l - 0.0894842 * a - 1.29149 * b
 
-lms' :: Iso' (Color D65 Oklab) (Color D65 LMS')
+lms' :: Iso' (Color' Oklab) (Color' LMS')
 lms' = iso m2Inv m2
 
-nonLin :: Iso' (Color D65 LMS) (Color D65 LMS')
+nonLin :: Iso' (Color' LMS) (Color' LMS')
 nonLin = iso (channels %~ (** 0.3)) (channels %~ (^^ 3))
 
 {-# RULES "oklab iso identity on oklab" oklab @Oklab @D65 = simple #-}

@@ -12,6 +12,7 @@ module ColorSpace.XYZ
     Illuminant (..),
     ColorSpace (..),
     Color (..),
+    Color',
     D75,
     D65,
     D55,
@@ -37,6 +38,8 @@ data Color il csp
       {-# UNPACK #-} !Double
       {-# UNPACK #-} !Double
   deriving (Show, Eq, Ord)
+
+type Color' = Color D65
 
 -- | Access the channels of a Color.
 -- Note that this will cast between color spaces.
