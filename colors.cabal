@@ -21,7 +21,7 @@ extra-source-files: CHANGELOG.md
 library
     exposed-modules:  
         ColorSpace.XYZ, ColorSpace.Lab, ColorSpace.Luv, ColorSpace.RGB, 
-        ColorSpace.JzAzBz
+        ColorSpace.JzAzBz, ColorSpace.Oklab
 
     -- Modules included in this library but not exported.
     -- other-modules:
