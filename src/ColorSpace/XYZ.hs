@@ -20,11 +20,12 @@ module ColorSpace.XYZ
     chromIso,
     apca,
     channels,
+    xy,
   )
 where
 
 import GHC.Generics (Generic)
-import Optics.Core (A_Lens, Each (..), LabelOptic (..), LabelOptic' (..), Traversal, Traversal', review, traversalVL, (^.))
+import Optics.Core (A_Lens, Each (..), LabelOptic (..), LabelOptic' (..), Traversal, Traversal', review, sumOf, traversalVL, (%~), (^.))
 import Optics.Getter
 import Optics.Iso
 import Optics.Lens
@@ -104,6 +105,26 @@ instance Illuminant il => LabelOptic "y" A_Lens (Color il XYZ) (Color il XYZ) Do
 instance Illuminant il => LabelOptic "z" A_Lens (Color il XYZ) (Color il XYZ) Double Double where
   labelOptic :: Lens' (Color il XYZ) Double
   labelOptic = lens (\(Color _ _ z) -> z) (\(Color x y _) z -> Color x y z)
+
+-------
+-- chromaticity
+
+-- | xy Chromaticity
+-- | Haskell's capitalization rules make thiis a little confusing,
+-- | but these are the lowercase xy chromaticity coodinates
+xy :: forall il. ColorSpace XYZ il => Lens' (Color il XYZ) (Double, Double)
+xy = lens get set
+  where
+    -- let d = sumOf channels color in (color ^~)
+    get :: Color il XYZ -> (Double, Double)
+    get (XYZ {x, y, z}) = let d = x + y + z in (x / d, y / d)
+    set :: Color il XYZ -> (Double, Double) -> Color il XYZ
+    set (XYZ {y}) (x', y') =
+      XYZ
+        { x = y / y' * x',
+          y = y,
+          z = y / y' * (1 - x' - y')
+        }
 
 --------
 -- Chromatic Adaptation
