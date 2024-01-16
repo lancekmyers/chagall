@@ -22,7 +22,8 @@ library
     exposed-modules:  
         ColorSpace.XYZ, ColorSpace.Lab, ColorSpace.Luv, ColorSpace.RGB, 
         ColorSpace.JzAzBz, ColorSpace.Oklab, ColorSpace.Cylindrical, 
-        ColorSpace.RGB.Space, ColorSpace.RGB.SRGB
+        ColorSpace.RGB.Space, ColorSpace.RGB.SRGB, 
+        ColorSpace.RGB.HSL, ColorSpace.RGB.HSV
 
 
     -- Modules included in this library but not exported.

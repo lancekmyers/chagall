@@ -9,6 +9,12 @@
 module ColorSpace.RGB
   ( SRGB,
     srgb,
+    HSL,
+    hsl,
+    pattern HSL,
+    HSV,
+    hsv,
+    pattern HSV,
     RGB,
     LinRGB,
     pattern RGB,
@@ -22,6 +28,8 @@ module ColorSpace.RGB
   )
 where
 
+import ColorSpace.RGB.HSL (HSL, hsl, pattern HSL)
+import ColorSpace.RGB.HSV (HSV, hsv, pattern HSV)
 import ColorSpace.RGB.SRGB (SRGB, srgb)
 import ColorSpace.RGB.Space
 import ColorSpace.XYZ
