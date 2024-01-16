@@ -32,6 +32,7 @@ import Optics.Iso
 import Optics.Lens
 import Optics.Optic (NoIx, (%))
 
+type Color :: * -> * -> *
 data Color il csp
   = Color
       {-# UNPACK #-} !Double
