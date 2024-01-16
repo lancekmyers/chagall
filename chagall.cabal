@@ -23,7 +23,7 @@ library
         ColorSpace.XYZ, ColorSpace.Lab, ColorSpace.Luv, ColorSpace.RGB, 
         ColorSpace.JzAzBz, ColorSpace.Oklab, ColorSpace.Cylindrical, 
         ColorSpace.RGB.Space, ColorSpace.RGB.SRGB, 
-        ColorSpace.RGB.HSL, ColorSpace.RGB.HSV
+        ColorSpace.RGB.HSL, ColorSpace.RGB.HSV, ColorSpace.RGB.HWB
 
 
     -- Modules included in this library but not exported.
