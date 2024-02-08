@@ -13,6 +13,7 @@ module ColorSpace.Oklab
 where
 
 import ColorSpace.XYZ
+import Data.Functor.Rep
 import Optics.Core (A_Lens, Iso', Lens', each, iso, lens, simple, view, (%), (%~))
 import Optics.Label (LabelOptic (..))
 import Optics.Re (re)
@@ -23,13 +24,17 @@ instance ColorSpace Oklab where
   type Il Oklab = D65
   xyz = lms' % re nonLin % re lms
 
--- % (channels % each % (iso (** 0.333) (** 3.0))) % (iso m2 m2Inv)
+data ChannelOklab = L | A | B
+  deriving (Show, Eq)
 
--- oklabToXYZ :: Color D65 Oklab -> Color D65 XYZ
--- oklabToXYZ = _
+instance Representable (Color Oklab) where
+  type Rep (Color Oklab) = ChannelOklab
 
--- xyzToOklab :: Color D65 XYZ -> Color D65 Oklab
--- xyzToOklab = _
+  index (Oklab l _ _) L = l
+  index (Oklab _ a _) A = a
+  index (Oklab _ _ b) B = b
+
+  tabulate f = Color (f L) (f A) (f B)
 
 data LMS
 

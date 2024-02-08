@@ -13,6 +13,7 @@ where
 
 import ColorSpace.RGB.Space
 import ColorSpace.XYZ
+import Data.Functor.Rep
 import Data.Maybe (fromMaybe)
 import Optics.Core
 
@@ -74,6 +75,18 @@ pattern HSL ::
   a ->
   Color (HSL rgb) a
 pattern HSL {h, s, l} = Color h s l
+
+data ChannelHSL = H | S | L
+  deriving (Show, Eq)
+
+instance RGBSpace rgb => Representable (Color (HSL rgb)) where
+  type Rep (Color (HSL rgb)) = ChannelHSL
+
+  index (HSL h _ _) H = h
+  index (HSL _ s _) S = s
+  index (HSL _ _ l) S = l
+
+  tabulate f = Color (f H) (f S) (f L)
 
 instance
   (RGBSpace rgb) =>

@@ -34,9 +34,22 @@ import ColorSpace.RGB.SRGB (SRGB, srgb)
 import ColorSpace.RGB.Space
 import ColorSpace.XYZ
 import Data.Bits (Bits (shiftL))
+import Data.Functor.Rep
 import Optics.Core (A_Lens, LabelOptic, lens)
 import Optics.Label (LabelOptic (..))
 import Text.Printf (printf)
+
+data ChannelRGB = R | G | B
+  deriving (Show, Eq)
+
+instance (RGBSpace rgb) => Representable (Color (RGB rgb)) where
+  type Rep (Color (RGB rgb)) = ChannelRGB
+
+  index (RGB r _ _) R = r
+  index (RGB _ g _) G = g
+  index (RGB _ _ b) G = b
+
+  tabulate f = Color (f R) (f G) (f B)
 
 -- >>> rgbToWords (Color 0.2 0.3 0.5 :: Color D65 (RGB SRGB))
 -- (51,76,128)

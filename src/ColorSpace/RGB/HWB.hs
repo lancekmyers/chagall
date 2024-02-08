@@ -18,6 +18,7 @@ import ColorSpace.RGB.HSV
 import ColorSpace.RGB.Space
 import ColorSpace.XYZ
 import Data.Fixed (mod')
+import Data.Functor.Rep
 import Data.Maybe (fromMaybe)
 import Optics.Core
 
@@ -57,6 +58,18 @@ pattern HWB ::
   a ->
   Color (HWB rgb) a
 pattern HWB {h, w, b} = Color h w b
+
+data ChannelHWB = H | W | B
+  deriving (Show, Eq)
+
+instance RGBSpace rgb => Representable (Color (HWB rgb)) where
+  type Rep (Color (HWB rgb)) = ChannelHWB
+
+  index (HWB h _ _) H = h
+  index (HWB _ w _) W = w
+  index (HWB _ _ b) B = b
+
+  tabulate f = Color (f H) (f W) (f B)
 
 instance
   (RGBSpace rgb) =>

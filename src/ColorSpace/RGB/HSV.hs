@@ -13,6 +13,7 @@ where
 
 import ColorSpace.RGB.Space
 import ColorSpace.XYZ
+import Data.Functor.Rep
 import Data.Maybe (fromMaybe)
 import Optics.Core
 
@@ -84,6 +85,18 @@ pattern HSV ::
   a ->
   Color (HSV rgb) a
 pattern HSV {h, s, v} = Color h s v
+
+data ChannelHSV = H | S | V
+  deriving (Show, Eq)
+
+instance RGBSpace rgb => Representable (Color (HSV rgb)) where
+  type Rep (Color (HSV rgb)) = ChannelHSV
+
+  index (HSV h _ _) H = h
+  index (HSV _ s _) S = s
+  index (HSV _ _ v) V = v
+
+  tabulate f = Color (f H) (f S) (f V)
 
 instance (RGBSpace rgb) => LabelOptic "h" A_Lens (Color (HSV rgb) a) (Color (HSV rgb) a) a a where
   labelOptic :: Lens' (Color (HSV rgb) a) a

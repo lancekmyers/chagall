@@ -18,6 +18,7 @@ where
 
 import ColorSpace.Cylindrical
 import ColorSpace.XYZ
+import Data.Functor.Rep
 import Optics.Core (A_Lens, Iso', Lens', iso, lens, simple, view, (%))
 import Optics.Label (LabelOptic (..))
 import Optics.Re (re)
@@ -74,6 +75,18 @@ pattern JzAzBz ::
   a ->
   Color JzAzBz a
 pattern JzAzBz {j, a, b} = Color j a b
+
+data ChannelJzAzBz = Jz | Az | Bz
+  deriving (Show, Eq)
+
+instance Representable (Color JzAzBz) where
+  type Rep (Color JzAzBz) = ChannelJzAzBz
+
+  index (JzAzBz j _ _) Jz = j
+  index (JzAzBz _ a _) Az = a
+  index (JzAzBz _ _ b) Bz = b
+
+  tabulate f = Color (f Jz) (f Az) (f Bz)
 
 instance LabelOptic "jz" A_Lens (Color JzAzBz a) (Color JzAzBz a) a a where
   labelOptic :: Lens' (Color JzAzBz a) a

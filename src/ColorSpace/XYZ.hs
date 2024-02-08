@@ -109,9 +109,14 @@ instance (ColorSpace (XYZ il)) => Representable (Color (XYZ il)) where
 
   tabulate f = Color (f X) (f Y) (f Z)
 
--- type instance Index (Color il XYZ a) = Rep (Color il XYZ)
--- type instance IxValue (Color il ch a) = a
--- instance Ixed (Color il csp a) where
+-- type instance Index (Color (XYZ il) a) = Rep (Color (XYZ il))
+type instance Index (Color csp a) = Rep (Color csp)
+
+type instance IxValue (Color csp a) = a
+
+instance (Representable (Color csp), Eq (Rep (Color csp))) => Ixed (Color csp a) where
+  type IxKind (Color csp a) = A_Lens
+  ix ch = lens (flip index ch) (\color a -> tabulate (\ch' -> if ch == ch' then a else index color ch'))
 
 {-# COMPLETE XYZ #-}
 
