@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module ColorSpace.RGB.HSV
   ( HSV,
@@ -22,8 +24,8 @@ data HSV (rgb :: *)
 
 rgb2hsv ::
   (RGBSpace rgb, Floating a, Ord a) =>
-  Color (Il rgb) (RGB rgb) a ->
-  Color (Il rgb) (HSV rgb) a
+  Color (RGB rgb) a ->
+  Color (HSV rgb) a
 rgb2hsv col@(RGB r g b) = Color h sV v
   where
     xmax = fromMaybe 0 $ maximumOf channels col
@@ -48,8 +50,8 @@ mod' x c
 
 hsv2rgb ::
   (RGBSpace rgb, Floating a, Ord a) =>
-  Color (Il rgb) (HSV rgb) a ->
-  Color (Il rgb) (RGB rgb) a
+  Color (HSV rgb) a ->
+  Color (RGB rgb) a
 hsv2rgb (Color h s v) = RGB r g b
   where
     r = f 5
@@ -59,13 +61,20 @@ hsv2rgb (Color h s v) = RGB r g b
       where
         k = mod' (n + (h / (pi / 3))) 6
 
-instance (RGBSpace rgb, il ~ Il rgb, Illuminant il) => ColorSpace (HSV rgb) il where
+instance (RGBSpace rgb) => ColorSpace (HSV rgb) where
+  type Il (HSV rgb) = IlRGB rgb
   xyz = (iso hsv2rgb rgb2hsv) % (xyz @(RGB rgb))
 
 hsv ::
-  forall rgb csp a.
-  (RGBSpace rgb, ColorSpace csp (Il rgb), Floating a, Ord a) =>
-  Iso' (Color (Il rgb) csp a) (Color (Il rgb) (HSV rgb) a)
+  forall rgb csp a il.
+  ( RGBSpace rgb,
+    ColorSpace csp,
+    Il csp ~ il,
+    IlRGB rgb ~ il,
+    Floating a,
+    Ord a
+  ) =>
+  Iso' (Color csp a) (Color (HSV rgb) a)
 hsv = xyz % re xyz
 
 pattern HSV ::
@@ -73,17 +82,17 @@ pattern HSV ::
   a ->
   a ->
   a ->
-  Color (Il rgb) (HSV rgb) a
+  Color (HSV rgb) a
 pattern HSV {h, s, v} = Color h s v
 
-instance (RGBSpace rgb, il ~ Il rgb) => LabelOptic "h" A_Lens (Color il (HSV rgb) a) (Color il (HSV rgb) a) a a where
-  labelOptic :: Lens' (Color il (HSV rgb) a) a
+instance (RGBSpace rgb) => LabelOptic "h" A_Lens (Color (HSV rgb) a) (Color (HSV rgb) a) a a where
+  labelOptic :: Lens' (Color (HSV rgb) a) a
   labelOptic = lens (\(HSV h _ _) -> h) (\(HSV _ s v) h -> HSV h s v)
 
-instance (RGBSpace rgb, il ~ Il rgb) => LabelOptic "d" A_Lens (Color il (HSV rgb) a) (Color il (HSV rgb) a) a a where
-  labelOptic :: Lens' (Color il (HSV rgb) a) a
+instance (RGBSpace rgb) => LabelOptic "d" A_Lens (Color (HSV rgb) a) (Color (HSV rgb) a) a a where
+  labelOptic :: Lens' (Color (HSV rgb) a) a
   labelOptic = lens (\(HSV _ s _) -> s) (\(HSV h _ v) s -> HSV h s v)
 
-instance (RGBSpace rgb, il ~ Il rgb) => LabelOptic "v" A_Lens (Color il (HSV rgb) a) (Color il (HSV rgb) a) a a where
-  labelOptic :: Lens' (Color il (HSV rgb) a) a
+instance (RGBSpace rgb) => LabelOptic "v" A_Lens (Color (HSV rgb) a) (Color (HSV rgb) a) a a where
+  labelOptic :: Lens' (Color (HSV rgb) a) a
   labelOptic = lens (\(HSV _ _ v) -> v) (\(HSV h s _) v -> HSV h s v)

@@ -26,14 +26,14 @@ import Optics.Core
 
 data Cyl csp
 
-class ColorSpace csp il => CylCsp csp il
+class ColorSpace csp => CylCsp csp
 
-cyl :: forall csp il a. (Floating a, Ord a, CylCsp csp il) => Iso' (Color il csp a) (Color il (Cyl csp) a)
+cyl :: forall csp a. (Floating a, Ord a, CylCsp csp) => Iso' (Color csp a) (Color (Cyl csp) a)
 cyl = iso to from
   where
-    from :: Color il (Cyl csp) a -> Color il csp a
+    from :: Color (Cyl csp) a -> Color csp a
     from col@(Color a c h) = Color a (c * cos h) (c * sin h)
-    to :: Color il csp a -> Color il (Cyl csp) a
+    to :: Color csp a -> Color (Cyl csp) a
     to col@(Color a x y) = Color a (hypot x y) (atan2' x y)
 
 atan2' :: (Ord a, Floating a) => a -> a -> a
@@ -46,11 +46,12 @@ atan2' y x
 hypot :: Floating a => a -> a -> a
 hypot x y = sqrt $ x ^ 2 + y ^ 2
 
-instance forall csp il. CylCsp csp il => ColorSpace (Cyl csp) il where
+instance forall csp. CylCsp csp => ColorSpace (Cyl csp) where
+  type Il (Cyl csp) = Il csp
   xyz = re cyl % xyz
 
-instance LabelOptic "hue" A_Lens (Color il (Cyl csp) a) (Color il (Cyl csp) a) a a where
+instance LabelOptic "hue" A_Lens (Color (Cyl csp) a) (Color (Cyl csp) a) a a where
   labelOptic = lens (\(Color _ _ hue) -> hue) (\(Color a c _) h -> Color a c h)
 
-instance LabelOptic "chroma" A_Lens (Color il (Cyl csp) a) (Color il (Cyl csp) a) a a where
+instance LabelOptic "chroma" A_Lens (Color (Cyl csp) a) (Color (Cyl csp) a) a a where
   labelOptic = lens (\(Color _ chroma _) -> chroma) (\(Color a _ h) chroma -> Color a chroma h)

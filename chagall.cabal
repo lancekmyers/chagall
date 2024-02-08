@@ -32,6 +32,8 @@ library
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     build-depends:    base ^>=4.16.1.0, optics-core, 
-        lowlin
+        lowlin, 
+        distributive, 
+        adjunctions
     hs-source-dirs:   src
     default-language: GHC2021

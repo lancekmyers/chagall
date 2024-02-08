@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 
 -- | Implementation based on https://observablehq.com/@jrus/jzazbz
@@ -23,10 +24,11 @@ import Optics.Re (re)
 
 data JzAzBz
 
-instance ColorSpace JzAzBz D65 where
+instance ColorSpace JzAzBz where
+  type Il JzAzBz = D65
   xyz = iso jzazbzToXYZ xyzToJzazbz
 
-xyzToJzazbz :: Floating a => Color' XYZ a -> Color' JzAzBz a
+xyzToJzazbz :: Floating a => Color' (XYZ D65) a -> Color JzAzBz a
 xyzToJzazbz (Color x y z) = Color jz az bz
   where
     lp = pq $ 0.674207838 * x + 0.382799340 * y - 0.047570458 * z
@@ -41,7 +43,7 @@ xyzToJzazbz (Color x y z) = Color jz az bz
       let x' = (x * 1e-4) ** 0.1593017578125
        in ((0.8359375 + 18.8515625 * x') / (1 + 18.6875 * x')) ** 134.034375
 
-jzazbzToXYZ :: Floating a => Color' JzAzBz a -> Color' XYZ a
+jzazbzToXYZ :: Floating a => Color JzAzBz a -> Color (XYZ D65) a
 jzazbzToXYZ (Color jz az bz) = Color x y z
   where
     jz' = jz + 1.6295499532821566e-11
@@ -63,38 +65,38 @@ jzazbzToXYZ (Color jz az bz) = Color x y z
 {-# RULES "jab iso identity on jab" jab @JzAzBz @D65 = simple #-}
 
 {-# INLINE [1] jab #-}
-jab :: forall csp il a. (ColorSpace csp il, Floating a, Ord a) => Iso' (Color il csp a) (Color' JzAzBz a)
-jab = xyz % chromIso % (re xyz)
+jab :: forall csp il a. (ColorSpace csp, Il csp ~ Il JzAzBz, Floating a, Ord a) => Iso' (Color csp a) (Color' JzAzBz a)
+jab = xyz % (re xyz)
 
 pattern JzAzBz ::
-  ColorSpace csp il =>
+  ColorSpace csp =>
   a ->
   a ->
   a ->
-  Color il csp a
+  Color csp a
 pattern JzAzBz {j, a, b} = Color j a b
 
-instance Illuminant il => LabelOptic "jz" A_Lens (Color il JzAzBz a) (Color il JzAzBz a) a a where
-  labelOptic :: Lens' (Color il JzAzBz a) a
+instance LabelOptic "jz" A_Lens (Color JzAzBz a) (Color JzAzBz a) a a where
+  labelOptic :: Lens' (Color JzAzBz a) a
   labelOptic = lens (\(Color j _ _) -> j) (\(Color _ a b) j -> Color j a b)
 
-instance Illuminant il => LabelOptic "az" A_Lens (Color il JzAzBz a) (Color il JzAzBz a) a a where
-  labelOptic :: Lens' (Color il JzAzBz a) a
+instance LabelOptic "az" A_Lens (Color JzAzBz a) (Color JzAzBz a) a a where
+  labelOptic :: Lens' (Color JzAzBz a) a
   labelOptic = lens (\(Color _ a _) -> a) (\(Color j _ b) a -> Color j a b)
 
-instance Illuminant il => LabelOptic "bz" A_Lens (Color il JzAzBz a) (Color il JzAzBz a) a a where
-  labelOptic :: Lens' (Color il JzAzBz a) a
+instance LabelOptic "bz" A_Lens (Color JzAzBz a) (Color JzAzBz a) a a where
+  labelOptic :: Lens' (Color JzAzBz a) a
   labelOptic = lens (\(Color _ _ b) -> b) (\(Color j a _) b -> Color j a b)
 
 -- | Polar coordinate version of JzAzBz
 type JzCzHz = Cyl JzAzBz
 
-instance CylCsp JzAzBz D65
+instance CylCsp JzAzBz
 
-pattern JzCzHz :: a -> a -> a -> Color il csp a
+pattern JzCzHz :: a -> a -> a -> Color csp a
 pattern JzCzHz j c h = Color j c h
 
-jch :: (ColorSpace csp il, Floating a, Ord a) => Iso' (Color il csp a) (Color D65 (Cyl JzAzBz) a)
+jch :: (ColorSpace csp, Il csp ~ D65, Floating a, Ord a) => Iso' (Color csp a) (Color (Cyl JzAzBz) a)
 jch = jab % cyl
 
 -- -- | Color difference Delta Ez

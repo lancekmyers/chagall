@@ -25,7 +25,7 @@ import Text.Printf (printf)
 data SRGB
 
 instance RGBSpace SRGB where
-  type Il SRGB = D65
+  type IlRGB SRGB = D65
   rgbSpec _ =
     RGBSpec
       { rChrom = (0.6400, 0.3300),
@@ -36,7 +36,7 @@ instance RGBSpace SRGB where
       }
   xyz2linRGB = iso toLin fromLin
 
-toLin :: forall a. (Floating a, Ord a) => Color D65 XYZ a -> Color D65 (LinRGB SRGB) a
+toLin :: forall a. (Floating a, Ord a) => Color (XYZ D65) a -> Color (LinRGB SRGB) a
 toLin (XYZ x y z) = Color r g b
   where
     (r, g, b) = mat |.\ (x, y, z)
@@ -47,7 +47,7 @@ toLin (XYZ x y z) = Color r g b
         (0.0556434, -0.2040259, 1.0572252)
       )
 
-fromLin :: forall a. (Floating a, Ord a) => Color D65 (LinRGB SRGB) a -> Color D65 XYZ a
+fromLin :: forall a. (Floating a, Ord a) => Color (LinRGB SRGB) a -> Color (XYZ D65) a
 fromLin (Color r g b) = XYZ x y z
   where
     (x, y, z) = mat |.\ (r, g, b)
@@ -59,6 +59,6 @@ fromLin (Color r g b) = XYZ x y z
       )
 
 srgb ::
-  (Ord a, Floating a, ColorSpace csp D65) =>
-  Iso' (Color D65 csp a) (Color D65 (RGB SRGB) a)
+  (Ord a, Floating a, ColorSpace csp, Il csp ~ D65) =>
+  Iso' (Color csp a) (Color (RGB SRGB) a)
 srgb = rgb

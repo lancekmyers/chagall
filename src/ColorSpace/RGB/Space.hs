@@ -39,13 +39,13 @@ data RGB rgb
 
 data LinRGB rgb
 
-class Illuminant (Il rgb) => RGBSpace rgb where
-  type Il rgb :: *
+class Illuminant (IlRGB rgb) => RGBSpace rgb where
+  type IlRGB rgb :: *
   rgbSpec :: (Ord a, Floating a) => Proxy rgb -> RGBSpec a
   {-# MINIMAL rgbSpec #-}
-  xyz2linRGB :: (Ord a, Floating a) => Iso' (Color (Il rgb) XYZ a) (Color (Il rgb) (LinRGB rgb) a)
+  xyz2linRGB :: (Ord a, Floating a) => Iso' (Color (XYZ (IlRGB rgb)) a) (Color (LinRGB rgb) a)
   xyz2linRGB = re linRGB2xyzDefault
-  compand :: (Floating a, Ord a) => Iso' (Color (Il rgb) (LinRGB rgb) a) (Color (Il rgb) (RGB rgb) a)
+  compand :: (Floating a, Ord a) => Iso' (Color (LinRGB rgb) a) (Color (RGB rgb) a)
   compand = compandDefault
 
 matrices :: forall il a. (Ord a, Floating a, Illuminant il) => Proxy il -> RGBSpec a -> (M33 a, M33 a)
@@ -67,28 +67,30 @@ matrices _ (RGBSpec {rChrom, gChrom, bChrom}) = (to, from)
       )
     from = inv to
 
-linRGB2xyzDefault :: forall rgb a. (RGBSpace rgb, Ord a, Floating a) => Iso' (Color (Il rgb) (LinRGB rgb) a) (Color (Il rgb) XYZ a)
+linRGB2xyzDefault :: forall rgb a. (RGBSpace rgb, Ord a, Floating a) => Iso' (Color (LinRGB rgb) a) (Color (XYZ (IlRGB rgb)) a)
 linRGB2xyzDefault = iso undefined undefined
   where
-    (mTo, mFrom) = matrices (Proxy @(Il rgb)) $ rgbSpec (Proxy @rgb)
-    to :: Color (Il rgb) (LinRGB rgb) a -> Color (Il rgb) XYZ a
+    (mTo, mFrom) = matrices (Proxy @(IlRGB rgb)) $ rgbSpec (Proxy @rgb)
+    to :: Color (LinRGB rgb) a -> Color (XYZ (IlRGB rgb)) a
     to (Color r g b) = let (x, y, z) = mTo |.\ (r, g, b) in XYZ x y z
 
-    from :: Color (Il rgb) XYZ a -> Color (Il rgb) (LinRGB rgb) a
+    from :: Color (XYZ (IlRGB rgb)) a -> Color (IlRGB rgb) a
     from (XYZ x y z) = let (r, g, b) = mFrom |.\ (x, y, z) in Color r g b
 
 compandDefault ::
   forall rgb a.
   (RGBSpace rgb, Floating a, Ord a) =>
-  Iso' (Color (Il rgb) (LinRGB rgb) a) (Color (Il rgb) (RGB rgb) a)
+  Iso' (Color (LinRGB rgb) a) (Color (RGB rgb) a)
 compandDefault = iso (channels %~ compandFwd) (channels %~ compandInv)
   where
     RGBSpec {compandFwd, compandInv} = rgbSpec (Proxy @rgb)
 
-instance (il ~ Il rgb, RGBSpace rgb) => ColorSpace (LinRGB rgb) il where
+instance (RGBSpace rgb) => ColorSpace (LinRGB rgb) where
+  type Il (LinRGB rgb) = IlRGB rgb
   xyz = re xyz2linRGB
 
-instance (il ~ Il rgb, RGBSpace rgb) => ColorSpace (RGB rgb) il where
+instance (RGBSpace rgb) => ColorSpace (RGB rgb) where
+  type Il (RGB rgb) = IlRGB rgb
   xyz = re compand % xyz
 
 pattern RGB ::
@@ -96,7 +98,7 @@ pattern RGB ::
   a ->
   a ->
   a ->
-  Color (Il rgb) (RGB rgb) a
+  Color (RGB rgb) a
 pattern RGB {r, g, b} = Color r g b
 
 pattern LinRGB ::
@@ -104,19 +106,19 @@ pattern LinRGB ::
   a ->
   a ->
   a ->
-  Color (Il rgb) (LinRGB rgb) a
+  Color (LinRGB rgb) a
 pattern LinRGB {r, g, b} = Color r g b
 
 rgb ::
   forall rgb csp a.
-  (ColorSpace csp (Il rgb), RGBSpace rgb, Ord a, Floating a) =>
-  Iso' (Color (Il rgb) csp a) (Color (Il rgb) (RGB rgb) a)
+  (ColorSpace csp, Il csp ~ IlRGB rgb, RGBSpace rgb, Ord a, Floating a) =>
+  Iso' (Color csp a) (Color (RGB rgb) a)
 rgb = xyz % re xyz
 
 linrgb ::
   forall rgb csp a.
-  (ColorSpace csp (Il rgb), RGBSpace rgb, Ord a, Floating a) =>
-  Iso' (Color (Il rgb) csp a) (Color (Il rgb) (LinRGB rgb) a)
+  (ColorSpace csp, Il csp ~ IlRGB rgb, RGBSpace rgb, Ord a, Floating a) =>
+  Iso' (Color csp a) (Color (LinRGB rgb) a)
 linrgb = xyz % xyz2linRGB
 
 -------

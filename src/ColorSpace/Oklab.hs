@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
 
 -- | Based on ths post https://bottosson.github.io/posts/oklab/
@@ -18,7 +19,8 @@ import Optics.Re (re)
 
 data Oklab
 
-instance ColorSpace Oklab D65 where
+instance ColorSpace Oklab where
+  type Il Oklab = D65
   xyz = lms' % re nonLin % re lms
 
 -- % (channels % each % (iso (** 0.333) (** 3.0))) % (iso m2 m2Inv)
@@ -33,24 +35,25 @@ data LMS
 
 data LMS'
 
-xyzToCone :: Floating a => Color' XYZ a -> Color' LMS a
+xyzToCone :: Floating a => Color' (XYZ D65) a -> Color' LMS a
 xyzToCone (Color x y z) = Color l m s
   where
     l = 0.8189330101 * x + 0.3618667424 * y - 0.1288597137 * z
     m = 0.0329845436 * x + 0.9293118715 * y + 0.0361456387 * z
     s = 0.0482003018 * x + 0.2643662691 * y + 0.6338517070 * z
 
-xyzFromCone :: Floating a => Color' LMS a -> Color' XYZ a
+xyzFromCone :: Floating a => Color' LMS a -> Color (XYZ D65) a
 xyzFromCone (Color l m s) = Color x y z
   where
     x = 1.22701 * l - 0.5578 * m + 0.281256 * s
     y = -0.0405802 * l + 1.11226 * m - 0.0716767 * s
     z = -0.0763813 * l - 0.421482 * m + 1.58616 * s
 
-instance ColorSpace LMS D65 where
+instance ColorSpace LMS where
+  type Il LMS = D65
   xyz = re lms
 
-lms :: Floating a => Iso' (Color' XYZ a) (Color' LMS a)
+lms :: Floating a => Iso' (Color' (XYZ D65) a) (Color' LMS a)
 lms = iso xyzToCone xyzFromCone
 
 m2 :: Floating a => Color' LMS' a -> Color' Oklab a
@@ -76,25 +79,24 @@ nonLin = iso (channels %~ (** 0.3)) (channels %~ (^^ 3))
 {-# RULES "oklab iso identity on oklab" oklab @Oklab @D65 = simple #-}
 
 {-# INLINE [1] oklab #-}
-oklab :: forall csp il a. (Floating a, Ord a, ColorSpace csp il) => Iso' (Color il csp a) (Color D65 Oklab a)
-oklab = xyz % chromIso % (re xyz)
+oklab :: forall csp a. (Floating a, Ord a, ColorSpace csp, Il csp ~ D65) => Iso' (Color csp a) (Color Oklab a)
+oklab = xyz % (re xyz)
 
 pattern Oklab ::
-  ColorSpace csp il =>
   a ->
   a ->
   a ->
-  Color il csp a
+  Color Oklab a
 pattern Oklab {l, a, b} = Color l a b
 
-instance Illuminant il => LabelOptic "l" A_Lens (Color il Oklab a) (Color il Oklab a) a a where
-  labelOptic :: Lens' (Color il Oklab a) a
+instance LabelOptic "l" A_Lens (Color Oklab a) (Color Oklab a) a a where
+  labelOptic :: Lens' (Color Oklab a) a
   labelOptic = lens (\(Color l _ _) -> l) (\(Color _ a b) l -> Color l a b)
 
-instance Illuminant il => LabelOptic "a" A_Lens (Color il Oklab a) (Color il Oklab a) a a where
-  labelOptic :: Lens' (Color il Oklab a) a
+instance LabelOptic "a" A_Lens (Color Oklab a) (Color Oklab a) a a where
+  labelOptic :: Lens' (Color Oklab a) a
   labelOptic = lens (\(Color _ a _) -> a) (\(Color l _ b) a -> Color l a b)
 
-instance Illuminant il => LabelOptic "b" A_Lens (Color il Oklab a) (Color il Oklab a) a a where
-  labelOptic :: Lens' (Color il Oklab a) a
+instance LabelOptic "b" A_Lens (Color Oklab a) (Color Oklab a) a a where
+  labelOptic :: Lens' (Color Oklab a) a
   labelOptic = lens (\(Color _ _ b) -> b) (\(Color l a _) b -> Color l a b)

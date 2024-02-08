@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 -- | HWB space
 -- | This is potentally nice for color pickers and more
@@ -26,25 +28,26 @@ data HWB (rgb :: *)
 
 -- data HSV
 
-hsv2hwb :: (RGBSpace rgb, Floating a) => Color (Il rgb) (HSV rgb) a -> Color (Il rgb) (HWB rgb) a
+hsv2hwb :: (RGBSpace rgb, Floating a) => Color (HSV rgb) a -> Color (HWB rgb) a
 hsv2hwb col@(HSV h s v) = Color h w b
   where
     w = (1 - s) * v
     b = 1 - v
 
-hwb2hsv :: (RGBSpace rgb, Floating a) => Color (Il rgb) (HWB rgb) a -> Color (Il rgb) (HSV rgb) a
+hwb2hsv :: (RGBSpace rgb, Floating a) => Color (HWB rgb) a -> Color (HSV rgb) a
 hwb2hsv (Color h w b) = HSV h s v
   where
     s = 1 - w / (1 - b)
     v = 1 - b
 
-instance (il ~ Il rgb, Illuminant il, RGBSpace rgb) => ColorSpace (HWB rgb) il where
+instance RGBSpace rgb => ColorSpace (HWB rgb) where
+  type Il (HWB rgb) = IlRGB rgb
   xyz = (iso hwb2hsv hsv2hwb) % xyz
 
 hwb ::
   forall rgb csp a.
-  (RGBSpace rgb, ColorSpace csp (Il rgb), Ord a, Floating a) =>
-  Iso' (Color (Il rgb) csp a) (Color (Il rgb) (HWB rgb) a)
+  (RGBSpace rgb, ColorSpace csp, Il csp ~ IlRGB rgb, Ord a, Floating a) =>
+  Iso' (Color csp a) (Color (HWB rgb) a)
 hwb = xyz % re xyz
 
 pattern HWB ::
@@ -52,26 +55,26 @@ pattern HWB ::
   a ->
   a ->
   a ->
-  Color (Il rgb) (HWB rgb) a
+  Color (HWB rgb) a
 pattern HWB {h, w, b} = Color h w b
 
 instance
-  (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "h" A_Lens (Color il (HWB rgb) a) (Color il (HWB rgb) a) a a
+  (RGBSpace rgb) =>
+  LabelOptic "h" A_Lens (Color (HWB rgb) a) (Color (HWB rgb) a) a a
   where
-  labelOptic :: Lens' (Color il (HWB rgb) a) a
+  labelOptic :: Lens' (Color (HWB rgb) a) a
   labelOptic = lens (\(HWB h _ _) -> h) (\(HWB _ w b) h -> HWB h w b)
 
 instance
-  (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "w" A_Lens (Color il (HWB rgb) a) (Color il (HWB rgb) a) a a
+  (RGBSpace rgb) =>
+  LabelOptic "w" A_Lens (Color (HWB rgb) a) (Color (HWB rgb) a) a a
   where
-  labelOptic :: Lens' (Color il (HWB rgb) a) a
+  labelOptic :: Lens' (Color (HWB rgb) a) a
   labelOptic = lens (\(HWB _ w _) -> w) (\(HWB h _ b) w -> HWB h w b)
 
 instance
-  (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "b" A_Lens (Color il (HWB rgb) a) (Color il (HWB rgb) a) a a
+  (RGBSpace rgb) =>
+  LabelOptic "b" A_Lens (Color (HWB rgb) a) (Color (HWB rgb) a) a a
   where
-  labelOptic :: Lens' (Color il (HWB rgb) a) a
+  labelOptic :: Lens' (Color (HWB rgb) a) a
   labelOptic = lens (\(HWB _ _ b) -> b) (\(HWB h w _) b -> HWB h w b)
