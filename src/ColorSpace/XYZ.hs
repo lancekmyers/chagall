@@ -1,4 +1,6 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -25,20 +27,20 @@ module ColorSpace.XYZ
   )
 where
 
-import GHC.Generics (Generic)
+import GHC.Generics (Generic, Generic1)
 import Optics.Core (A_Lens, Each (..), LabelOptic (..), LabelOptic' (..), Traversal, Traversal', review, sumOf, traversalVL, (%~), (^.))
 import Optics.Getter
 import Optics.Iso
 import Optics.Lens
 import Optics.Optic (NoIx, (%))
 
-type Color :: * -> * -> *
-data Color il csp
+type Color :: * -> * -> * -> *
+data Color il csp a
   = Color
-      {-# UNPACK #-} !Double
-      {-# UNPACK #-} !Double
-      {-# UNPACK #-} !Double
-  deriving (Show, Eq, Ord)
+      !a
+      !a
+      !a
+  deriving (Show, Eq, Ord, Generic1, Functor)
 
 type Color' = Color D65
 
@@ -46,8 +48,8 @@ type Color' = Color D65
 -- Note that this will cast between color spaces.
 -- Use carefully.
 channels ::
-  forall csp il csp' il'.
-  Traversal (Color il csp) (Color il' csp') Double Double
+  forall csp il csp' il' a.
+  Traversal (Color il csp a) (Color il' csp' a) a a
 channels = traversalVL go
   where
     go f (Color a b c) = Color <$> (f a) <*> (f b) <*> (f c)
@@ -55,7 +57,7 @@ channels = traversalVL go
 data XYZ
 
 class Illuminant il where
-  refWhite :: Color il XYZ
+  refWhite :: Fractional a => Color il XYZ a
 
 -- Reference illuminants from http://www.brucelindbloom.com
 -- he says "all come from ASTM E308-01 except B which comes from Wyszecki & Stiles, p. 769"
@@ -80,7 +82,7 @@ instance Illuminant D75 where
   refWhite = XYZ {x = 0.94972, y = 1.00000, z = 1.22638}
 
 class Illuminant il => ColorSpace csp il where
-  xyz :: Iso' (Color il csp) (Color il XYZ)
+  xyz :: (Ord a, Floating a) => Iso' (Color il csp a) (Color il XYZ a)
 
 instance Illuminant il => ColorSpace XYZ il where
   xyz = simple
@@ -89,25 +91,22 @@ instance Illuminant il => ColorSpace XYZ il where
 
 pattern XYZ ::
   (ColorSpace csp il, Illuminant il) =>
-  Double ->
-  Double ->
-  Double ->
-  Color il csp
-pattern XYZ {x, y, z} <-
-  (view xyz -> Color x y z)
-  where
-    XYZ x y z = review xyz (Color x y z :: Color il XYZ)
+  a ->
+  a ->
+  a ->
+  Color il csp a
+pattern XYZ {x, y, z} = Color x y z
 
-instance Illuminant il => LabelOptic "x" A_Lens (Color il XYZ) (Color il XYZ) Double Double where
-  labelOptic :: Lens' (Color il XYZ) Double
+instance Illuminant il => LabelOptic "x" A_Lens (Color il XYZ a) (Color il XYZ a) a a where
+  labelOptic :: Lens' (Color il XYZ a) a
   labelOptic = lens (\(Color x _ _) -> x) (\(Color _ y z) x -> Color x y z)
 
-instance Illuminant il => LabelOptic "y" A_Lens (Color il XYZ) (Color il XYZ) Double Double where
-  labelOptic :: Lens' (Color il XYZ) Double
+instance Illuminant il => LabelOptic "y" A_Lens (Color il XYZ a) (Color il XYZ a) a a where
+  labelOptic :: Lens' (Color il XYZ a) a
   labelOptic = lens (\(Color _ y _) -> y) (\(Color x _ z) y -> Color x y z)
 
-instance Illuminant il => LabelOptic "z" A_Lens (Color il XYZ) (Color il XYZ) Double Double where
-  labelOptic :: Lens' (Color il XYZ) Double
+instance Illuminant il => LabelOptic "z" A_Lens (Color il XYZ a) (Color il XYZ a) a a where
+  labelOptic :: Lens' (Color il XYZ a) a
   labelOptic = lens (\(Color _ _ z) -> z) (\(Color x y _) z -> Color x y z)
 
 -------
@@ -116,13 +115,13 @@ instance Illuminant il => LabelOptic "z" A_Lens (Color il XYZ) (Color il XYZ) Do
 -- | xy Chromaticity
 -- | Haskell's capitalization rules make thiis a little confusing,
 -- | but these are the lowercase xy chromaticity coodinates
-xy :: forall il. ColorSpace XYZ il => Lens' (Color il XYZ) (Double, Double)
+xy :: forall il a. (Fractional a, ColorSpace XYZ il) => Lens' (Color il XYZ a) (a, a)
 xy = lens get set
   where
     -- let d = sumOf channels color in (color ^~)
-    get :: Color il XYZ -> (Double, Double)
+    get :: Color il XYZ a -> (a, a)
     get (XYZ {x, y, z}) = let d = x + y + z in (x / d, y / d)
-    set :: Color il XYZ -> (Double, Double) -> Color il XYZ
+    set :: Color il XYZ a -> (a, a) -> Color il XYZ a
     set (XYZ {y}) (x', y') =
       XYZ
         { x = y / y' * x',
@@ -147,7 +146,7 @@ xy = lens get set
 {-# INLINE [2] chromAdapt #-}
 
 -- | Chromatic adaptation between illuminants using Bradford scaling
-chromAdapt :: forall i1 i2. (Illuminant i1, Illuminant i2) => Color i1 XYZ -> Color i2 XYZ
+chromAdapt :: forall i1 i2 a. (Illuminant i1, Illuminant i2, Fractional a) => Color i1 XYZ a -> Color i2 XYZ a
 chromAdapt = bradfordConeResponseInv . scale . bradfordConeResponse
   where
     (rho_s, gamma_s, beta_s) = bradfordConeResponse $ refWhite @i1
@@ -158,17 +157,17 @@ chromAdapt = bradfordConeResponseInv . scale . bradfordConeResponse
         beta_s / beta_d * beta
       )
 
-chromIso :: forall i1 i2. (Illuminant i1, Illuminant i2) => Iso' (Color i1 XYZ) (Color i2 XYZ)
+chromIso :: forall i1 i2 a. (Illuminant i1, Illuminant i2, Fractional a) => Iso' (Color i1 XYZ a) (Color i2 XYZ a)
 chromIso = iso (chromAdapt) (chromAdapt)
 
-bradfordConeResponse :: Illuminant il => Color il XYZ -> (Double, Double, Double)
+bradfordConeResponse :: (Illuminant il, Fractional a) => Color il XYZ a -> (a, a, a)
 bradfordConeResponse (XYZ x y z) = (rho, gamma, beta)
   where
     rho = 0.8951000 * x + 0.2664000 * y - 0.1614000 * z
     gamma = -0.7502000 * x + 1.7135000 * y + 0.0367000 * z
     beta = 0.0389000 * x - 0.0685000 * y + 1.0296000 * z
 
-bradfordConeResponseInv :: Illuminant il => (Double, Double, Double) -> Color il XYZ
+bradfordConeResponseInv :: (Illuminant il, Fractional a) => (a, a, a) -> Color il XYZ a
 bradfordConeResponseInv (rho, gamma, beta) = (XYZ x y z)
   where
     x = 0.9869929 * rho - 0.1470543 * gamma + 0.1599627 * beta
@@ -179,7 +178,7 @@ bradfordConeResponseInv (rho, gamma, beta) = (XYZ x y z)
 -- | Measure contrast between foreground and background colors to ensure readability. Note that the first argument is the text color, the second
 -- | is background color.
 -- | Taken from https://www.myndex.com/APCA/, refer to that for details.
-apca :: ColorSpace csp D65 => Color D65 csp -> Color D65 csp -> Double
+apca :: (ColorSpace csp D65, Floating a, Ord a) => Color D65 csp a -> Color D65 csp a -> a
 apca tx bg
   | abs s_apc < w_clamp = 0.0
   | s_apc > 0 = 100 * (s_apc - w_off)

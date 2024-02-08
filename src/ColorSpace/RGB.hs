@@ -41,8 +41,8 @@ import Text.Printf (printf)
 -- >>> rgbToWords (Color 0.2 0.3 0.5 :: Color D65 (RGB SRGB))
 -- (51,76,128)
 rgbToWords ::
-  RGBSpace rgb =>
-  Color (Il rgb) (RGB rgb) ->
+  (RealFrac a, RGBSpace rgb) =>
+  Color (Il rgb) (RGB rgb) a ->
   (Word, Word, Word)
 rgbToWords (Color r g b) = (r', g', b')
   where
@@ -52,12 +52,12 @@ rgbToWords (Color r g b) = (r', g', b')
 
 -- >>> srgbToHex (Color (216 / 255) (46 / 255) (157 / 255) :: Color D65 RGB)
 -- "#d82e9d"
-rgbToHex :: RGBSpace rgb => Color (Il rgb) (RGB rgb) -> String
+rgbToHex :: (RealFrac a, RGBSpace rgb) => Color (Il rgb) (RGB rgb) a -> String
 rgbToHex (rgbToWords -> (r, g, b)) = printf "#%02x%02x%02x" r g b
 
 -- >>> srgbFromHex "#d82e9d"
 -- Just (Color 0.8470588235294118 0.1803921568627451 0.615686274509804)
-rgbFromHex :: String -> Maybe (Color (Il rgb) (RGB rgb))
+rgbFromHex :: RealFrac a => String -> Maybe (Color (Il rgb) (RGB rgb) a)
 rgbFromHex ('#' : _r' : _r : _g' : _g : _b' : _b : []) =
   Color <$> r <*> g <*> b
   where
@@ -79,36 +79,36 @@ rgbFromHex _ = Nothing
 
 instance
   (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "r" A_Lens (Color il (RGB rgb)) (Color il (RGB rgb)) Double Double
+  LabelOptic "r" A_Lens (Color il (RGB rgb) a) (Color il (RGB rgb) a) a a
   where
   labelOptic = lens (\(RGB r _ _) -> r) (\(RGB _ g b) r' -> RGB r' g b)
 
 instance
   (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "r" A_Lens (Color il (LinRGB rgb)) (Color il (LinRGB rgb)) Double Double
+  LabelOptic "r" A_Lens (Color il (LinRGB rgb) a) (Color il (LinRGB rgb) a) a a
   where
   labelOptic = lens (\(LinRGB r _ _) -> r) (\(LinRGB _ g b) r' -> LinRGB r' g b)
 
 instance
   (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "g" A_Lens (Color il (RGB rgb)) (Color il (RGB rgb)) Double Double
+  LabelOptic "g" A_Lens (Color il (RGB rgb) a) (Color il (RGB rgb) a) a a
   where
   labelOptic = lens (\(RGB _ g _) -> g) (\(RGB r _ b) g' -> RGB r g' b)
 
 instance
   (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "g" A_Lens (Color il (LinRGB rgb)) (Color il (LinRGB rgb)) Double Double
+  LabelOptic "g" A_Lens (Color il (LinRGB rgb) a) (Color il (LinRGB rgb) a) a a
   where
   labelOptic = lens (\(LinRGB _ g _) -> g) (\(LinRGB r _ b) g' -> LinRGB r g' b)
 
 instance
   (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "b" A_Lens (Color il (RGB rgb)) (Color il (RGB rgb)) Double Double
+  LabelOptic "b" A_Lens (Color il (RGB rgb) a) (Color il (RGB rgb) a) a a
   where
   labelOptic = lens (\(RGB _ _ b) -> b) (\(RGB r g _) b' -> RGB r g b')
 
 instance
   (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "b" A_Lens (Color il (LinRGB rgb)) (Color il (LinRGB rgb)) Double Double
+  LabelOptic "b" A_Lens (Color il (LinRGB rgb) a) (Color il (LinRGB rgb) a) a a
   where
   labelOptic = lens (\(LinRGB _ _ b) -> b) (\(LinRGB r g _) b' -> LinRGB r g b')

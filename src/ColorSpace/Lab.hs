@@ -26,42 +26,39 @@ data Lab
 instance Illuminant il => ColorSpace Lab il where
   xyz = iso labToXYZ xyzToLab
 
-{-# RULES "lab iso identity on lab D65" lab @Lab @D65 = simple #-}
+{-# RULES "lab iso identity on lab D65" lab @_ @Lab @D65 = simple #-}
 
-{-# RULES "lab iso identity on lab D50" lab @Lab @D50 = simple #-}
+{-# RULES "lab iso identity on lab D50" lab @_ @Lab @D50 = simple #-}
 
-{-# RULES "lab iso identity on lab D55" lab @Lab @D55 = simple #-}
+{-# RULES "lab iso identity on lab D55" lab @_ @Lab @D55 = simple #-}
 
-{-# RULES "lab iso identity on lab D75" lab @Lab @D75 = simple #-}
+{-# RULES "lab iso identity on lab D75" lab @_ @Lab @D75 = simple #-}
 
 {-# INLINE [1] lab #-}
-lab :: ColorSpace csp il => Iso' (Color il csp) (Color il Lab)
+lab :: (Floating a, Ord a) => ColorSpace csp il => Iso' (Color il csp a) (Color il Lab a)
 lab = xyz % (re xyz)
 
 pattern Lab ::
   ColorSpace csp il =>
-  Double ->
-  Double ->
-  Double ->
-  Color il csp
-pattern Lab {l, a, b} <-
-  (view lab -> Color l a b)
-  where
-    Lab l a b = view (re lab) (Color l a b :: Color il Lab)
+  a ->
+  a ->
+  a ->
+  Color il csp a
+pattern Lab {l, a, b} = Color l a b
 
-instance Illuminant il => LabelOptic "l" A_Lens (Color il Lab) (Color il Lab) Double Double where
-  labelOptic :: Lens' (Color il Lab) Double
+instance Illuminant il => LabelOptic "l" A_Lens (Color il Lab a) (Color il Lab a) a a where
+  labelOptic :: Lens' (Color il Lab a) a
   labelOptic = lens (\(Color l _ _) -> l) (\(Color _ a b) l -> Color l a b)
 
-instance Illuminant il => LabelOptic "a" A_Lens (Color il Lab) (Color il Lab) Double Double where
-  labelOptic :: Lens' (Color il Lab) Double
+instance Illuminant il => LabelOptic "a" A_Lens (Color il Lab a) (Color il Lab a) a a where
+  labelOptic :: Lens' (Color il Lab a) a
   labelOptic = lens (\(Color _ a _) -> a) (\(Color l _ b) a -> Color l a b)
 
-instance Illuminant il => LabelOptic "b" A_Lens (Color il Lab) (Color il Lab) Double Double where
-  labelOptic :: Lens' (Color il Lab) Double
+instance Illuminant il => LabelOptic "b" A_Lens (Color il Lab a) (Color il Lab a) a a where
+  labelOptic :: Lens' (Color il Lab a) a
   labelOptic = lens (\(Color _ _ b) -> b) (\(Color l a _) b -> Color l a b)
 
-xyzToLab :: forall il. Illuminant il => Color il XYZ -> Color il Lab
+xyzToLab :: forall il a. (Illuminant il, Floating a, Ord a) => Color il XYZ a -> Color il Lab a
 xyzToLab (XYZ x y z) = Color l a b
   where
     XYZ xr yr zr = refWhite @il
@@ -83,7 +80,7 @@ xyzToLab (XYZ x y z) = Color l a b
     a = 500 * (fx - fy)
     b = 200 * (fy - fz)
 
-labToXYZ :: forall il. Illuminant il => Color il Lab -> Color il XYZ
+labToXYZ :: forall il a. (Illuminant il, Floating a, Ord a) => Color il Lab a -> Color il XYZ a
 labToXYZ (Color l a b) = Color (xr' * xr) (yr' * yr) (zr' * zr)
   where
     XYZ xr yr zr = refWhite @il
@@ -107,15 +104,15 @@ type LCHab = Cyl Lab
 
 instance Illuminant il => CylCsp Lab il
 
-lchab :: ColorSpace csp il => Iso' (Color il csp) (Color il LCHab)
+lchab :: (Floating a, Ord a, ColorSpace csp il) => Iso' (Color il csp a) (Color il LCHab a)
 lchab = lab % cyl
 
 pattern LCHab ::
   ColorSpace LCHab il =>
-  Double ->
-  Double ->
-  Double ->
-  Color il LCHab
+  a ->
+  a ->
+  a ->
+  Color il LCHab a
 pattern LCHab {l, c, h} = Color l c h
 
 ------
@@ -123,7 +120,7 @@ pattern LCHab {l, c, h} = Color l c h
 -- based on http://www.brucelindbloom.com/index.html?Eqn_Spect_to_XYZ.html
 
 -- | Color difference Delta E (CIE 1976)
-deltaE76 :: Illuminant il => Color il Lab -> Color il Lab -> Double
+deltaE76 :: (Illuminant il, Floating a) => Color il Lab a -> Color il Lab a -> a
 deltaE76 (Lab l1 a1 b1) (Lab l2 a2 b2) =
   sqrt $
     (l1 - l2) ^ 2 + (a1 - a2) ^ 2 + (b1 - b2) ^ 2

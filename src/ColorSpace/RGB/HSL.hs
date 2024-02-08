@@ -11,9 +11,13 @@ where
 
 import ColorSpace.RGB.Space
 import ColorSpace.XYZ
-import Data.Fixed (mod')
 import Data.Maybe (fromMaybe)
 import Optics.Core
+
+mod' x c
+  | x <= c && x >= 0 = x
+  | x < 0 = mod' x c + c
+  | x > c = mod' x c - c
 
 -------
 -- HSL + HSV
@@ -23,7 +27,7 @@ data HSL (rgb :: *)
 
 -- data HSV
 
-rgb2hsl :: RGBSpace rgb => Color (Il rgb) (RGB rgb) -> Color (Il rgb) (HSL rgb)
+rgb2hsl :: (RGBSpace rgb, Floating a, Ord a) => Color (Il rgb) (RGB rgb) a -> Color (Il rgb) (HSL rgb) a
 rgb2hsl col@(RGB r g b) = Color h sL l
   where
     xmax = fromMaybe 0 $ maximumOf channels col
@@ -40,7 +44,7 @@ rgb2hsl col@(RGB r g b) = Color h sL l
       | l == 0 || l == 1 = 0
       | otherwise = (xmax - l) / (l `min` (1 - l))
 
-hsl2rgb :: RGBSpace rgb => Color (Il rgb) (HSL rgb) -> Color (Il rgb) (RGB rgb)
+hsl2rgb :: (RGBSpace rgb, Floating a, Ord a) => Color (Il rgb) (HSL rgb) a -> Color (Il rgb) (RGB rgb) a
 hsl2rgb (Color h s l) = RGB r g b
   where
     r = f 0
@@ -55,36 +59,36 @@ instance (il ~ Il rgb, Illuminant il, RGBSpace rgb) => ColorSpace (HSL rgb) il w
   xyz = (iso hsl2rgb rgb2hsl) % (xyz @(RGB rgb))
 
 hsl ::
-  forall rgb csp.
-  (RGBSpace rgb, ColorSpace csp (Il rgb)) =>
-  Iso' (Color (Il rgb) csp) (Color (Il rgb) (HSL rgb))
+  forall rgb csp a.
+  (RGBSpace rgb, ColorSpace csp (Il rgb), Floating a, Ord a) =>
+  Iso' (Color (Il rgb) csp a) (Color (Il rgb) (HSL rgb) a)
 hsl = xyz % re xyz
 
 pattern HSL ::
   RGBSpace rgb =>
-  Double ->
-  Double ->
-  Double ->
-  Color (Il rgb) (HSL rgb)
+  a ->
+  a ->
+  a ->
+  Color (Il rgb) (HSL rgb) a
 pattern HSL {h, s, l} = Color h s l
 
 instance
   (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "h" A_Lens (Color il (HSL rgb)) (Color il (HSL rgb)) Double Double
+  LabelOptic "h" A_Lens (Color il (HSL rgb) a) (Color il (HSL rgb) a) a a
   where
-  labelOptic :: Lens' (Color il (HSL rgb)) Double
+  labelOptic :: Lens' (Color il (HSL rgb) a) a
   labelOptic = lens (\(HSL h _ _) -> h) (\(HSL _ s l) h -> HSL h s l)
 
 instance
   (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "s" A_Lens (Color il (HSL rgb)) (Color il (HSL rgb)) Double Double
+  LabelOptic "s" A_Lens (Color il (HSL rgb) a) (Color il (HSL rgb) a) a a
   where
-  labelOptic :: Lens' (Color il (HSL rgb)) Double
+  labelOptic :: Lens' (Color il (HSL rgb) a) a
   labelOptic = lens (\(HSL _ s _) -> s) (\(HSL h _ l) s -> HSL h s l)
 
 instance
   (RGBSpace rgb, il ~ Il rgb) =>
-  LabelOptic "l" A_Lens (Color il (HSL rgb)) (Color il (HSL rgb)) Double Double
+  LabelOptic "l" A_Lens (Color il (HSL rgb) a) (Color il (HSL rgb) a) a a
   where
-  labelOptic :: Lens' (Color il (HSL rgb)) Double
+  labelOptic :: Lens' (Color il (HSL rgb) a) a
   labelOptic = lens (\(HSL _ _ l) -> l) (\(HSL h s _) l -> HSL h s l)

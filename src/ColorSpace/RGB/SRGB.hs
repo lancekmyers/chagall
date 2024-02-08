@@ -36,22 +36,22 @@ instance RGBSpace SRGB where
       }
   xyz2linRGB = iso toLin fromLin
 
-toLin :: Color D65 XYZ -> Color D65 (LinRGB SRGB)
+toLin :: forall a. (Floating a, Ord a) => Color D65 XYZ a -> Color D65 (LinRGB SRGB) a
 toLin (XYZ x y z) = Color r g b
   where
     (r, g, b) = mat |.\ (x, y, z)
-    mat :: M33 Double
+    mat :: M33 a
     mat =
       ( (3.2404542, -1.5371385, -0.4985314),
         (-0.9692660, 1.8760108, 0.0415560),
         (0.0556434, -0.2040259, 1.0572252)
       )
 
-fromLin :: Color D65 (LinRGB SRGB) -> Color D65 XYZ
+fromLin :: forall a. (Floating a, Ord a) => Color D65 (LinRGB SRGB) a -> Color D65 XYZ a
 fromLin (Color r g b) = XYZ x y z
   where
     (x, y, z) = mat |.\ (r, g, b)
-    mat :: M33 Double
+    mat :: M33 a
     mat =
       ( (0.4124564, 0.3575761, 0.1804375),
         (0.2126729, 0.7151522, 0.0721750),
@@ -59,6 +59,6 @@ fromLin (Color r g b) = XYZ x y z
       )
 
 srgb ::
-  ColorSpace csp D65 =>
-  Iso' (Color D65 csp) (Color D65 (RGB SRGB))
+  (Ord a, Floating a, ColorSpace csp D65) =>
+  Iso' (Color D65 csp a) (Color D65 (RGB SRGB) a)
 srgb = rgb

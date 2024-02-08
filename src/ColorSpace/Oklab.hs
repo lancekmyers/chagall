@@ -33,14 +33,14 @@ data LMS
 
 data LMS'
 
-xyzToCone :: Color' XYZ -> Color' LMS
+xyzToCone :: Floating a => Color' XYZ a -> Color' LMS a
 xyzToCone (Color x y z) = Color l m s
   where
     l = 0.8189330101 * x + 0.3618667424 * y - 0.1288597137 * z
     m = 0.0329845436 * x + 0.9293118715 * y + 0.0361456387 * z
     s = 0.0482003018 * x + 0.2643662691 * y + 0.6338517070 * z
 
-xyzFromCone :: Color' LMS -> Color' XYZ
+xyzFromCone :: Floating a => Color' LMS a -> Color' XYZ a
 xyzFromCone (Color l m s) = Color x y z
   where
     x = 1.22701 * l - 0.5578 * m + 0.281256 * s
@@ -50,54 +50,51 @@ xyzFromCone (Color l m s) = Color x y z
 instance ColorSpace LMS D65 where
   xyz = re lms
 
-lms :: Iso' (Color' XYZ) (Color' LMS)
+lms :: Floating a => Iso' (Color' XYZ a) (Color' LMS a)
 lms = iso xyzToCone xyzFromCone
 
-m2 :: Color' LMS' -> Color' Oklab
+m2 :: Floating a => Color' LMS' a -> Color' Oklab a
 m2 (Color l' m' s') = Color l a b
   where
     l = 0.2104542553 * l' + 0.7936177850 * m' - 0.0040720468 * s'
     a = 1.9779984951 * l' - 2.4285922050 * m' + 0.4505937099 * s'
     b = 0.0259040371 * l' + 0.7827717662 * m' - 0.8086757660 * s'
 
-m2Inv :: Color' Oklab -> Color' LMS'
+m2Inv :: Floating a => Color' Oklab a -> Color' LMS' a
 m2Inv (Color l a b) = Color l' m' s'
   where
     l' = 1.0 * l + 0.396338 * a + 0.215804 * b
     m' = 1.0 * l - 0.105561 * a - 0.0638542 * b
     s' = 1.0 * l - 0.0894842 * a - 1.29149 * b
 
-lms' :: Iso' (Color' Oklab) (Color' LMS')
+lms' :: Floating a => Iso' (Color' Oklab a) (Color' LMS' a)
 lms' = iso m2Inv m2
 
-nonLin :: Iso' (Color' LMS) (Color' LMS')
+nonLin :: Floating a => Iso' (Color' LMS a) (Color' LMS' a)
 nonLin = iso (channels %~ (** 0.3)) (channels %~ (^^ 3))
 
 {-# RULES "oklab iso identity on oklab" oklab @Oklab @D65 = simple #-}
 
 {-# INLINE [1] oklab #-}
-oklab :: forall csp il. ColorSpace csp il => Iso' (Color il csp) (Color D65 Oklab)
+oklab :: forall csp il a. (Floating a, Ord a, ColorSpace csp il) => Iso' (Color il csp a) (Color D65 Oklab a)
 oklab = xyz % chromIso % (re xyz)
 
 pattern Oklab ::
   ColorSpace csp il =>
-  Double ->
-  Double ->
-  Double ->
-  Color il csp
-pattern Oklab {l, a, b} <-
-  (view oklab -> Color l a b)
-  where
-    Oklab l a b = view (re oklab) (Color l a b :: Color il Oklab)
+  a ->
+  a ->
+  a ->
+  Color il csp a
+pattern Oklab {l, a, b} = Color l a b
 
-instance Illuminant il => LabelOptic "l" A_Lens (Color il Oklab) (Color il Oklab) Double Double where
-  labelOptic :: Lens' (Color il Oklab) Double
+instance Illuminant il => LabelOptic "l" A_Lens (Color il Oklab a) (Color il Oklab a) a a where
+  labelOptic :: Lens' (Color il Oklab a) a
   labelOptic = lens (\(Color l _ _) -> l) (\(Color _ a b) l -> Color l a b)
 
-instance Illuminant il => LabelOptic "a" A_Lens (Color il Oklab) (Color il Oklab) Double Double where
-  labelOptic :: Lens' (Color il Oklab) Double
+instance Illuminant il => LabelOptic "a" A_Lens (Color il Oklab a) (Color il Oklab a) a a where
+  labelOptic :: Lens' (Color il Oklab a) a
   labelOptic = lens (\(Color _ a _) -> a) (\(Color l _ b) a -> Color l a b)
 
-instance Illuminant il => LabelOptic "b" A_Lens (Color il Oklab) (Color il Oklab) Double Double where
-  labelOptic :: Lens' (Color il Oklab) Double
+instance Illuminant il => LabelOptic "b" A_Lens (Color il Oklab a) (Color il Oklab a) a a where
+  labelOptic :: Lens' (Color il Oklab a) a
   labelOptic = lens (\(Color _ _ b) -> b) (\(Color l a _) b -> Color l a b)
