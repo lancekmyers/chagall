@@ -69,11 +69,10 @@ jab :: forall csp il a. (ColorSpace csp, Il csp ~ Il JzAzBz, Floating a, Ord a) 
 jab = xyz % (re xyz)
 
 pattern JzAzBz ::
-  ColorSpace csp =>
   a ->
   a ->
   a ->
-  Color csp a
+  Color JzAzBz a
 pattern JzAzBz {j, a, b} = Color j a b
 
 instance LabelOptic "jz" A_Lens (Color JzAzBz a) (Color JzAzBz a) a a where
@@ -93,7 +92,7 @@ type JzCzHz = Cyl JzAzBz
 
 instance CylCsp JzAzBz
 
-pattern JzCzHz :: a -> a -> a -> Color csp a
+pattern JzCzHz :: a -> a -> a -> Color JzCzHz a
 pattern JzCzHz j c h = Color j c h
 
 jch :: (ColorSpace csp, Il csp ~ D65, Floating a, Ord a) => Iso' (Color csp a) (Color (Cyl JzAzBz) a)

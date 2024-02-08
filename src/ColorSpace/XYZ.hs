@@ -116,11 +116,11 @@ instance (ColorSpace (XYZ il)) => Representable (Color (XYZ il)) where
 {-# COMPLETE XYZ #-}
 
 pattern XYZ ::
-  (ColorSpace csp) =>
+  (ColorSpace (XYZ il)) =>
   a ->
   a ->
   a ->
-  Color csp a
+  Color (XYZ il) a
 pattern XYZ {x, y, z} = Color x y z
 
 instance Illuminant il => LabelOptic "x" A_Lens (Color (XYZ il) a) (Color (XYZ il) a) a a where
